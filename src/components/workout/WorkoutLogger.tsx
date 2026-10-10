@@ -3,8 +3,9 @@ import { Banner } from "~/components/ui/Banner";
 import { Button, PrimaryButton } from "~/components/ui/Button";
 import { ElapsedTimer } from "~/components/ui/ElapsedTimer";
 import { formatTime } from "~/components/ui/formatters";
-import { BUILTIN_EXERCISES } from "~/services/exercises";
-import { useCustomExercises } from "~/hooks/useCustomExercises";
+import { MuscleBreakdown } from "~/components/muscles/MuscleBreakdown";
+import { useExerciseLookup } from "~/hooks/useExerciseLookup";
+import { muscleBreakdown } from "~/lib/muscles";
 import type { FinishDetails } from "~/hooks/useActiveWorkout";
 import type {
   Exercise,
@@ -63,7 +64,7 @@ export function WorkoutLogger({
   restSeconds: number;
   onRestSecondsChange: (seconds: number) => void;
 }) {
-  const { customExercises } = useCustomExercises();
+  const exerciseMap = useExerciseLookup();
   const [picking, setPicking] = useState(false);
   const [pickingRoutine, setPickingRoutine] = useState(false);
   const [inspecting, setInspecting] = useState<string | null>(null);
@@ -71,20 +72,20 @@ export function WorkoutLogger({
   const [prMessage, setPrMessage] = useState<string | null>(null);
   const hidePrMessage = useCallback(() => setPrMessage(null), []);
 
-  // Built-in + custom exercises by id (custom ones win on a clash)
-  const exerciseMap = useMemo(() => {
-    const map = new Map<string, Exercise>();
-    for (const ex of BUILTIN_EXERCISES) map.set(ex.id, ex);
-    for (const ex of customExercises) map.set(ex.id, ex);
-    return map;
-  }, [customExercises]);
-
   const safeSets = useMemo(
     () => (Array.isArray(draft.sets) ? draft.sets : []),
     [draft.sets],
   );
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
   const doneSets = safeSets.filter((s) => s.done);
+
+  // Muscles worked: what's been done so far, or the plan until a set is ticked
+  const counted = doneSets.length > 0 ? doneSets : safeSets;
+  const muscleShares = muscleBreakdown(counted, (id) => exerciseMap.get(id)?.group);
+  const muscleCaption =
+    doneSets.length > 0
+      ? `Based on ${doneSets.length} completed ${doneSets.length === 1 ? "set" : "sets"}`
+      : `Planned · ${safeSets.length} ${safeSets.length === 1 ? "set" : "sets"}`;
 
   function setSets(sets: SetEntry[]) {
     onChange({ ...draft, sets });
@@ -199,6 +200,8 @@ export function WorkoutLogger({
           onRemoveSet={(setId) => setSets(withoutSet(safeSets, setId))}
         />
       ))}
+
+      <MuscleBreakdown shares={muscleShares} caption={muscleCaption} />
 
       <div className="grid grid-cols-2 gap-2">
         <Button variant="secondary" onClick={() => setPicking(true)} className="w-full">

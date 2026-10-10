@@ -1,3 +1,4 @@
+import { MuscleTags } from "~/components/muscles/MuscleTags";
 import { Card } from "~/components/ui/Card";
 import { HistoryIcon } from "~/components/ui/icons";
 import type { Exercise, ExerciseHistory, SetEntry } from "~/types/workout";
@@ -75,6 +76,7 @@ export function ExerciseCard({
               </button>
             ) : null}
           </div>
+          <MuscleTags exerciseId={group.exerciseId} group={exercise?.group} compact />
           {best && best.weight > 0 && best.reps > 0 ? (
             <p className="text-xs text-lime-400">
               best: {best.weight} {best.unit} × {best.reps}

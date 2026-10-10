@@ -1,6 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { MuscleBreakdown } from "~/components/muscles/MuscleBreakdown";
 import { Banner } from "~/components/ui/Banner";
+import { useExerciseLookup } from "~/hooks/useExerciseLookup";
+import { muscleBreakdown } from "~/lib/muscles";
 import { GhostButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { formatDate, formatDuration, formatTime } from "~/components/ui/formatters";
@@ -21,6 +24,11 @@ export function WorkoutDetailCard({
 }) {
   const safeSets = useMemo(() => (Array.isArray(workout.sets) ? workout.sets : []), [workout.sets]);
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
+  const exercises = useExerciseLookup();
+  const muscleShares = useMemo(
+    () => muscleBreakdown(safeSets, (id) => exercises.get(id)?.group),
+    [safeSets, exercises],
+  );
 
   return (
     <div className="space-y-3 pb-20">
@@ -50,6 +58,11 @@ export function WorkoutDetailCard({
           <p className="text-xs italic text-neutral-300">{workout.note}</p>
         </Card>
       ) : null}
+
+      <MuscleBreakdown
+        shares={muscleShares}
+        caption={`Based on ${safeSets.length} ${safeSets.length === 1 ? "set" : "sets"}`}
+      />
 
       {groups.map((group) => {
         const best = bestSet(group.sets);

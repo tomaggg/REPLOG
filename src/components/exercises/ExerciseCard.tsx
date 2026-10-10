@@ -1,3 +1,4 @@
+import { MuscleTags } from "~/components/muscles/MuscleTags";
 import { NotesIcon, PlayIcon, TrashIcon } from "~/components/ui/icons";
 import { getGroupMeta } from "~/lib/exercises";
 import type { Exercise } from "~/types/workout";
@@ -67,6 +68,7 @@ export function ExerciseCard({
             </span>
           )}
         </div>
+        <MuscleTags exerciseId={exercise.id} group={exercise.group} compact />
       </div>
 
       {isCustomized && (
