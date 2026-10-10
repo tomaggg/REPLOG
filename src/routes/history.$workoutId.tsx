@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { AuthGuard } from "~/components/auth/AuthGuard";
 import { WorkoutDetailCard } from "~/components/history/WorkoutDetailCard";
 import { AppShell } from "~/components/layout/AppShell";
 import { Spinner } from "~/components/ui/Spinner";
 import { useStore } from "~/context/StoreContext";
-import type { Workout } from "~/types/workout";
+import { useWorkouts } from "~/hooks/useWorkouts";
+import { errorMessage } from "~/lib/errors";
 
 export const Route = createFileRoute("/history/$workoutId")({
   component: WorkoutDetailPage,
@@ -27,29 +28,9 @@ function WorkoutDetailContent({ workoutId }: { workoutId: string }) {
   const { store } = useStore();
   const navigate = useNavigate();
 
-  const [workout, setWorkout] = useState<Workout | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { workouts, loading, error, setError } = useWorkouts();
+  const workout = workouts.find((w) => w.id === workoutId) ?? null;
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    if (!store) return;
-    setLoading(true);
-    try {
-      const list = await store.listWorkouts();
-      const match = list.find((w) => w.id === workoutId);
-      if (match) setWorkout(match);
-      else setError("Workout not found.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load workout.");
-    } finally {
-      setLoading(false);
-    }
-  }, [store, workoutId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function handleDelete() {
     if (!store || busy || !workout) return;
@@ -61,7 +42,7 @@ function WorkoutDetailContent({ workoutId }: { workoutId: string }) {
       await store.deleteWorkout(workout.id);
       void navigate({ to: "/history" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete workout.");
+      setError(errorMessage(err, "Could not delete workout."));
       setBusy(false);
     }
   }

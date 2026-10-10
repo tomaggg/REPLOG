@@ -3,6 +3,7 @@ import { Banner } from "~/components/ui/Banner";
 import { PrimaryButton } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Input";
 import { useStore } from "~/context/StoreContext";
+import { errorMessage } from "~/lib/errors";
 
 export function AuthForm() {
   const { store, mode } = useStore();
@@ -30,7 +31,7 @@ export function AuthForm() {
         await store.logIn(email, password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+      setError(errorMessage(err, "Something went wrong. Try again."));
     } finally {
       setBusy(false);
     }

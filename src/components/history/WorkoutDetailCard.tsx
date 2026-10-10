@@ -5,7 +5,7 @@ import { GhostButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { formatDate, formatDuration, formatTime } from "~/components/ui/formatters";
 import type { Workout } from "~/types/workout";
-import { bestSet, formatVolume, groupSets } from "~/types/workout";
+import { bestSet, formatVolume, groupSets } from "~/lib/workout";
 
 export function WorkoutDetailCard({
   workout,

@@ -1,13 +1,13 @@
+import { newId } from "~/lib/id";
 import type {
   AuthUser,
-  DataStore,
   Exercise,
   Routine,
   UserProfile,
   WeightEntry,
   Workout,
 } from "~/types/workout";
-import { StoreError, newId } from "~/types/workout";
+import { StoreError, type DataStore } from "./data-store";
 
 // In-memory memory stores for demo mode (never written to localStorage)
 let memoryUser: AuthUser | null = null;
@@ -54,6 +54,11 @@ export function createDemoStore(): DataStore {
       if (!memoryUser) throw new StoreError("Must be logged in.");
       const list = memoryWorkouts.get(memoryUser.uid) ?? [];
       return [...list].sort((a, b) => b.startedAt - a.startedAt);
+    },
+    async getActiveWorkout() {
+      if (!memoryUser) throw new StoreError("Must be logged in.");
+      const list = memoryWorkouts.get(memoryUser.uid) ?? [];
+      return list.find((w) => w.finishedAt === null) ?? null;
     },
     async saveWorkout(w) {
       if (!memoryUser) throw new StoreError("Must be logged in.");

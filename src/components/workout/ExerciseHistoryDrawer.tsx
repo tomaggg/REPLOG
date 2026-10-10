@@ -1,11 +1,6 @@
-import type { Exercise, SetEntry } from "~/types/workout";
+import type { Exercise, ExerciseHistory } from "~/types/workout";
+import { ExternalLinkIcon } from "~/components/ui/icons";
 import { Modal } from "~/components/ui/Modal";
-
-export interface ExerciseHistory {
-  last: SetEntry[];
-  best: SetEntry | null;
-  sessions: number;
-}
 
 export function ExerciseHistoryDrawer({
   exerciseName,
@@ -45,15 +40,7 @@ export function ExerciseHistoryDrawer({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-lime-400/10 border border-lime-400/30 px-2.5 py-1 text-xs font-semibold text-lime-400 hover:bg-lime-400 hover:text-neutral-950 transition-colors"
                 >
                   <span>▶ Watch Video Reference</span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-3 w-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
+                  <ExternalLinkIcon className="h-3 w-3" />
                 </a>
               </div>
             ) : null}

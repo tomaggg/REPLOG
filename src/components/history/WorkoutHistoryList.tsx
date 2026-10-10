@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Card } from "~/components/ui/Card";
 import { formatDate, formatDuration, formatTime } from "~/components/ui/formatters";
 import type { Workout } from "~/types/workout";
-import { formatVolume } from "~/types/workout";
+import { formatVolume } from "~/lib/workout";
 
 export function WorkoutHistoryList({ workouts }: { workouts: Workout[] }) {
   if (!workouts || workouts.length === 0) {

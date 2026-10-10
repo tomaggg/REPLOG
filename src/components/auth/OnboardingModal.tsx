@@ -3,6 +3,7 @@ import { Banner } from "~/components/ui/Banner";
 import { PrimaryButton } from "~/components/ui/Button";
 import { useStore } from "~/context/StoreContext";
 import type { Unit, UserProfile } from "~/types/workout";
+import { errorMessage } from "~/lib/errors";
 
 export function OnboardingModal({
   onComplete,
@@ -53,7 +54,7 @@ export function OnboardingModal({
       await store.logBodyWeight(weightNum, weightUnit);
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save profile preferences.");
+      setError(errorMessage(err, "Could not save profile preferences."));
     } finally {
       setBusy(false);
     }

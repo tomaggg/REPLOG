@@ -1,4 +1,5 @@
-// Core types and domain helpers for RepLog
+// Data shapes used across RepLog. This file holds types only — no logic.
+// Helpers that work with these types live in ~/lib/workout.ts.
 
 export type Unit = "kg" | "lb";
 
@@ -47,24 +48,28 @@ export interface SetEntry {
   unit: Unit;
 }
 
-/** A training session. `finishedAt === null` means it is in progress. */
+/**
+ * A training session. `finishedAt === null` means it is still in progress
+ * (the "active workout" shown on the home page).
+ */
 export interface Workout {
   id: string;
   /** epoch milliseconds */
   startedAt: number;
-  /** epoch milliseconds, or null while open */
+  /** epoch milliseconds, or null while in progress */
   finishedAt: number | null;
   note: string;
   sets: SetEntry[];
 }
 
-/** A pre-configured routine template */
+/** One exercise inside a routine template. */
 export interface RoutineExercise {
   exerciseId: string;
   exerciseName: string;
   targetSets: number;
 }
 
+/** A pre-configured workout template. */
 export interface Routine {
   id: string;
   name: string;
@@ -73,26 +78,14 @@ export interface Routine {
   createdAt: number;
 }
 
-/** Everything the app does with accounts and data goes through this interface. */
-export interface DataStore {
-  kind: "firebase" | "demo";
-  onAuthChange(cb: (user: AuthUser | null) => void): () => void;
-  signUp(email: string, password: string): Promise<AuthUser>;
-  logIn(email: string, password: string): Promise<AuthUser>;
-  logOut(): Promise<void>;
-  listWorkouts(): Promise<Workout[]>;
-  saveWorkout(workout: Workout): Promise<void>;
-  deleteWorkout(workoutId: string): Promise<void>;
-  getProfile(): Promise<UserProfile | null>;
-  saveProfile(profile: UserProfile): Promise<void>;
-  listWeightLogs(): Promise<WeightEntry[]>;
-  logBodyWeight(weight: number, unit: Unit): Promise<void>;
-  listRoutines(): Promise<Routine[]>;
-  saveRoutine(routine: Routine): Promise<void>;
-  deleteRoutine(routineId: string): Promise<void>;
-  listCustomExercises(): Promise<Exercise[]>;
-  saveCustomExercise(exercise: Exercise): Promise<void>;
-  deleteCustomExercise(exerciseId: string): Promise<void>;
+/** What past sessions tell us about one exercise. */
+export interface ExerciseHistory {
+  /** Sets from the most recent finished session that included this exercise. */
+  last: SetEntry[];
+  /** Heaviest set ever logged. */
+  best: SetEntry | null;
+  /** Number of finished sessions that included this exercise. */
+  sessions: number;
 }
 
 export interface FirebaseConfig {
@@ -100,99 +93,4 @@ export interface FirebaseConfig {
   authDomain: string;
   projectId: string;
   appId: string;
-}
-
-export class StoreError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StoreError";
-  }
-}
-
-export function emptyWorkout(id: string): Workout {
-  return { id, startedAt: Date.now(), finishedAt: null, note: "", sets: [] };
-}
-
-/** Placeholder (0 × 0) sets for each exercise in a routine, to be filled in while logging. */
-export function routineSeedSets(routine: Routine, unit: Unit): SetEntry[] {
-  const out: SetEntry[] = [];
-  for (const ex of routine.exercises) {
-    for (let s = 1; s <= ex.targetSets; s++) {
-      out.push({
-        id: newId(),
-        exerciseId: ex.exerciseId,
-        exerciseName: ex.exerciseName,
-        setIndex: s,
-        weight: 0,
-        reps: 0,
-        unit,
-      });
-    }
-  }
-  return out;
-}
-
-export function newId(): string {
-  const c = globalThis.crypto;
-  if (c && "randomUUID" in c) return c.randomUUID();
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/** Total weight moved in a workout, split by unit. */
-export function volumeByUnit(workout: Workout): Record<string, number> {
-  const out: Record<string, number> = {};
-  const sets = Array.isArray(workout?.sets) ? workout.sets : [];
-  for (const s of sets) {
-    const v = (Number(s.weight) || 0) * (Number(s.reps) || 0);
-    out[s.unit] = (out[s.unit] ?? 0) + v;
-  }
-  return out;
-}
-
-export function formatVolume(workout: Workout): string {
-  const byUnit = volumeByUnit(workout);
-  const parts = Object.entries(byUnit).map(
-    ([unit, v]) => `${Math.round(v).toLocaleString()} ${unit}`,
-  );
-  return parts.length ? parts.join(" + ") : "—";
-}
-
-export function groupSets(
-  sets: SetEntry[],
-): { exerciseId: string; exerciseName: string; sets: SetEntry[] }[] {
-  const safeSets = Array.isArray(sets) ? sets : [];
-  const order: string[] = [];
-  const map = new Map<
-    string,
-    { exerciseId: string; exerciseName: string; sets: SetEntry[] }
-  >();
-  for (const s of safeSets) {
-    let bucket = map.get(s.exerciseId);
-    if (!bucket) {
-      bucket = { exerciseId: s.exerciseId, exerciseName: s.exerciseName, sets: [] };
-      map.set(s.exerciseId, bucket);
-      order.push(s.exerciseId);
-    }
-    bucket.sets.push(s);
-  }
-  return order.map((id) => {
-    const b = map.get(id)!;
-    b.sets.sort((a, z) => a.setIndex - z.setIndex);
-    return b;
-  });
-}
-
-export function bestSet(sets: SetEntry[]): SetEntry | null {
-  const safeSets = Array.isArray(sets) ? sets : [];
-  let best: SetEntry | null = null;
-  for (const s of safeSets) {
-    if (!best) {
-      best = s;
-      continue;
-    }
-    if (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) {
-      best = s;
-    }
-  }
-  return best;
 }

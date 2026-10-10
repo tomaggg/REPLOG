@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "~/components/auth/AuthGuard";
 import { WorkoutHistoryList } from "~/components/history/WorkoutHistoryList";
 import { AppShell } from "~/components/layout/AppShell";
 import { Spinner } from "~/components/ui/Spinner";
-import { useStore } from "~/context/StoreContext";
-import type { Workout } from "~/types/workout";
+import { useWorkouts } from "~/hooks/useWorkouts";
 
 export const Route = createFileRoute("/history/")({
   component: HistoryPage,
@@ -22,29 +20,7 @@ function HistoryPage() {
 }
 
 function HistoryDashboard() {
-  const { store } = useStore();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadHistory = useCallback(async () => {
-    if (!store) return;
-    setLoading(true);
-    try {
-      const list = await store.listWorkouts();
-      // Only finished workouts belong in history
-      setWorkouts(list.filter((w) => w.finishedAt !== null));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load history.");
-    } finally {
-      setLoading(false);
-    }
-  }, [store]);
-
-  useEffect(() => {
-    void loadHistory();
-  }, [loadHistory]);
+  const { workouts, loading, error } = useWorkouts();
 
   if (loading) {
     return <Spinner label="Loading workout history…" />;

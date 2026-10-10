@@ -17,8 +17,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [status, authReady, user, navigate]);
 
-  // Boot / initial-check spinner. Only shown once per user per app session
-  // (profile is cached in AuthContext across route navigations).
   if (status === "booting" || !authReady || (user && !profileReady)) {
     return (
       <AppShell showNav={false}>

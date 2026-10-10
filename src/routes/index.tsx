@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AuthGuard } from "~/components/auth/AuthGuard";
 import { AppShell } from "~/components/layout/AppShell";
-import type { ExerciseHistory } from "~/components/workout/ExerciseHistoryDrawer";
+import { Spinner } from "~/components/ui/Spinner";
 import { WorkoutLogger } from "~/components/workout/WorkoutLogger";
-import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
-import type { Workout } from "~/types/workout";
-import { bestSet, emptyWorkout, newId } from "~/types/workout";
-import type { WorkoutFinishPatch } from "~/components/workout/WorkoutLogger";
+import { useActiveWorkout, type FinishDetails } from "~/hooks/useActiveWorkout";
+import { useWorkouts } from "~/hooks/useWorkouts";
+import { buildExerciseHistory } from "~/lib/workout";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -25,145 +24,37 @@ function HomePage() {
 }
 
 function WorkoutDashboard() {
-  const { store, unit } = useStore();
-  const { user } = useAuth();
+  const { unit } = useStore();
+  const active = useActiveWorkout();
+  const past = useWorkouts();
 
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [draft, setDraft] = useState<Workout | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = sessionStorage.getItem("replog_active_draft");
-        if (saved) {
-          sessionStorage.removeItem("replog_active_draft");
-          return JSON.parse(saved);
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return null;
-  });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const exerciseHistory = useMemo(() => buildExerciseHistory(past.workouts), [past.workouts]);
 
-  const refresh = useCallback(async () => {
-    if (!store) return;
-    try {
-      const list = await store.listWorkouts();
-      setWorkouts(Array.isArray(list) ? list : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load workouts.");
-    }
-  }, [store]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  // Check if draft was set while navigating to "/"
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem("replog_active_draft");
-      if (saved) {
-        sessionStorage.removeItem("replog_active_draft");
-        setDraft(JSON.parse(saved));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const currentDraft = ((): Workout => {
-    if (
-      draft &&
-      typeof draft === "object" &&
-      typeof (draft as any).startedAt === "number"
-    ) {
-      return draft;
-    }
-    return emptyWorkout(newId());
-  })();
-
-  function persistDraft(next: Workout | null) {
-    setDraft(next);
-  }
-
-  // Pre-calculate per-exercise history safely from past workouts
-  const exerciseHistory = useMemo(() => {
-    const out: Record<string, ExerciseHistory> = {};
-    for (const w of workouts) {
-      if (!w.finishedAt) continue;
-      const sets = Array.isArray(w.sets) ? w.sets : [];
-      const seenInWorkout = new Set<string>();
-      for (const s of sets) {
-        if (!seenInWorkout.has(s.exerciseId)) {
-          seenInWorkout.add(s.exerciseId);
-          const current = out[s.exerciseId] ?? { last: [], best: null, sessions: 0 };
-          current.sessions += 1;
-          if (current.last.length === 0) {
-            current.last = sets.filter((x) => x.exerciseId === s.exerciseId);
-          }
-          out[s.exerciseId] = current;
-        }
-      }
-    }
-
-    const allSetsByExercise = new Map<string, typeof workouts[number]["sets"]>();
-    for (const w of workouts) {
-      const sets = Array.isArray(w.sets) ? w.sets : [];
-      for (const s of sets) {
-        const list = allSetsByExercise.get(s.exerciseId) ?? [];
-        list.push(s);
-        allSetsByExercise.set(s.exerciseId, list);
-      }
-    }
-
-    for (const [id, list] of allSetsByExercise.entries()) {
-      if (out[id]) {
-        out[id].best = bestSet(list);
-      }
-    }
-    return out;
-  }, [workouts]);
-
-  async function handleFinish(patch: WorkoutFinishPatch) {
-    const safeSets = Array.isArray(currentDraft.sets) ? currentDraft.sets : [];
-    if (!store || busy || safeSets.length === 0) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const finished: Workout = {
-        ...currentDraft,
-        startedAt: patch.startedAt,
-        finishedAt: patch.finishedAt,
-        note: patch.note,
-      };
-      await store.saveWorkout(finished);
-      persistDraft(null);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save workout.");
-    } finally {
-      setBusy(false);
-    }
+  async function handleFinish(details: FinishDetails) {
+    if (active.workout.sets.length === 0) return;
+    const saved = await active.finish(details);
+    if (saved) await past.refresh();
   }
 
   function handleDiscard() {
     if (window.confirm("Discard today's workout sets?")) {
-      persistDraft(null);
+      void active.discard();
     }
+  }
+
+  if (active.loading) {
+    return <Spinner label="Loading your workout…" />;
   }
 
   return (
     <WorkoutLogger
-      draft={currentDraft}
+      draft={active.workout}
       history={exerciseHistory}
       unit={unit}
-      busy={busy}
-      error={error}
-      onChange={persistDraft}
-      onFinish={(patch) => void handleFinish(patch)}
+      busy={active.busy}
+      error={active.error ?? past.error}
+      onChange={active.update}
+      onFinish={(details) => void handleFinish(details)}
       onDiscard={handleDiscard}
     />
   );
