@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Banner } from "~/components/ui/Banner";
 import { Button, PrimaryButton } from "~/components/ui/Button";
 import { ElapsedTimer } from "~/components/ui/ElapsedTimer";
@@ -16,11 +16,13 @@ import type {
 } from "~/types/workout";
 import { newId } from "~/lib/id";
 import { unlockSound } from "~/lib/alert";
-import { addRoutineToWorkout, groupSets, renumberSets } from "~/lib/workout";
+import { findPRs, prLabel } from "~/lib/records";
+import { addRoutineToWorkout, groupSets, previousSet, renumberSets } from "~/lib/workout";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseHistoryDrawer } from "./ExerciseHistoryDrawer";
 import { ExercisePickerModal } from "./ExercisePickerModal";
 import { FinishWorkoutModal } from "./FinishWorkoutModal";
+import { PRToast } from "./PRToast";
 import { RestTimerBar } from "./RestTimerBar";
 import { RoutinePickerModal } from "./RoutinePickerModal";
 
@@ -66,6 +68,8 @@ export function WorkoutLogger({
   const [pickingRoutine, setPickingRoutine] = useState(false);
   const [inspecting, setInspecting] = useState<string | null>(null);
   const [finishOpen, setFinishOpen] = useState(false);
+  const [prMessage, setPrMessage] = useState<string | null>(null);
+  const hidePrMessage = useCallback(() => setPrMessage(null), []);
 
   // Built-in + custom exercises by id (custom ones win on a clash)
   const exerciseMap = useMemo(() => {
@@ -94,15 +98,32 @@ export function WorkoutLogger({
     setSets(safeSets.map((s) => (s.id === setId ? { ...s, ...patch } : s)));
   }
 
-  /** Tick a set on or off. Ticking one on starts the rest timer. */
+  /** Tick a set on or off. Ticking one on starts the rest timer and checks for a PR. */
   function toggleDone(setId: string) {
-    const nowDone = !safeSets.find((s) => s.id === setId)?.done;
-    const sets = safeSets.map((s) => (s.id === setId ? { ...s, done: nowDone } : s));
-    if (nowDone) {
-      unlockSound(); // must happen during a tap so the end-of-rest beep is allowed
-      onChange({ ...draft, sets, restEndsAt: Date.now() + restSeconds * 1000 });
-    } else {
-      setSets(sets);
+    const target = safeSets.find((s) => s.id === setId);
+    if (!target) return;
+    if (target.done) {
+      setSets(safeSets.map((s) => (s.id === setId ? { ...s, done: false } : s)));
+      return;
+    }
+
+    let ticked: SetEntry = { ...target, done: true };
+    // Ticking an empty row means "same as last time"
+    const previous = previousSet(history[target.exerciseId], target.setIndex - 1, target.unit);
+    if (previous && ticked.weight === 0 && ticked.reps === 0) {
+      ticked = { ...ticked, weight: previous.weight, reps: previous.reps };
+    }
+    const sets = safeSets.map((s) => (s.id === setId ? ticked : s));
+
+    unlockSound(); // must happen during a tap so the end-of-rest beep is allowed
+    onChange({ ...draft, sets, restEndsAt: Date.now() + restSeconds * 1000 });
+
+    const sameExercise = sets.filter((s) => s.exerciseId === target.exerciseId);
+    const pr = findPRs(sameExercise, history[target.exerciseId]).get(setId);
+    if (pr) {
+      setPrMessage(
+        `${prLabel(pr)}! ${target.exerciseName} ${ticked.weight} ${ticked.unit} × ${ticked.reps}`,
+      );
     }
   }
 
@@ -193,6 +214,8 @@ export function WorkoutLogger({
           {busy ? "Saving session…" : "Finish Workout"}
         </PrimaryButton>
       ) : null}
+
+      {prMessage ? <PRToast message={prMessage} onDone={hidePrMessage} /> : null}
 
       {draft.restEndsAt ? (
         <RestTimerBar endsAt={draft.restEndsAt} onAdjust={adjustRest} onDismiss={endRest} />

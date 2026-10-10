@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "~/context/StoreContext";
 import { errorMessage } from "~/lib/errors";
+import { markPRs } from "~/lib/records";
 import { completedSets, emptyWorkout } from "~/lib/workout";
-import type { Workout } from "~/types/workout";
+import type { ExerciseHistory, Workout } from "~/types/workout";
 
 /** Wait this long after the last edit before saving, so typing doesn't cause a write per keystroke. */
 const SAVE_DELAY_MS = 800;
@@ -106,8 +107,14 @@ export function useActiveWorkout() {
     setWorkout(emptyWorkout());
   }
 
-  /** Mark the workout as finished. Returns true on success. */
-  async function finish(details: FinishDetails): Promise<boolean> {
+  /**
+   * Mark the workout as finished. `history` (past sessions) is used to stamp
+   * personal records on the saved sets. Returns true on success.
+   */
+  async function finish(
+    details: FinishDetails,
+    history: Record<string, ExerciseHistory>,
+  ): Promise<boolean> {
     if (!store) return false;
     cancelPendingSave();
     setBusy(true);
@@ -117,7 +124,7 @@ export function useActiveWorkout() {
       await store.saveWorkout({
         ...workout,
         ...details,
-        sets: completedSets(workout.sets),
+        sets: markPRs(completedSets(workout.sets), history),
         restEndsAt: undefined,
       });
       reset();

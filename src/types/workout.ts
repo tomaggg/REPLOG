@@ -50,7 +50,12 @@ export interface SetEntry {
   unit: Unit;
   /** Ticked off while logging. Only done sets are kept when a workout is finished. */
   done?: boolean;
+  /** Set when this set was a personal record at the time it was logged. */
+  pr?: PRKind;
 }
+
+/** "weight": heaviest ever. "e1rm": strongest set by estimated one-rep max. */
+export type PRKind = "weight" | "e1rm";
 
 /**
  * A training session. `finishedAt === null` means it is still in progress
@@ -92,6 +97,8 @@ export interface ExerciseHistory {
   best: SetEntry | null;
   /** Number of finished sessions that included this exercise. */
   sessions: number;
+  /** Best numbers so far, in kg — what a new set must beat to be a PR. */
+  records: { weightKg: number; e1rmKg: number } | null;
 }
 
 export interface FirebaseConfig {

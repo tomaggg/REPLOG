@@ -34,7 +34,7 @@ function WorkoutDashboard() {
 
   async function handleFinish(details: FinishDetails) {
     if (!active.workout.sets.some((s) => s.done)) return;
-    const saved = await active.finish(details);
+    const saved = await active.finish(details, exerciseHistory);
     if (saved) await past.refresh();
   }
 

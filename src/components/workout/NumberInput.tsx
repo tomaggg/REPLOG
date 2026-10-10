@@ -11,12 +11,15 @@ export function NumberInput({
   onCommit,
   inputMode,
   ariaLabel,
+  placeholder = "0",
   className = "",
 }: {
   value: number;
   onCommit: (n: number) => void;
   inputMode: "decimal" | "numeric";
   ariaLabel: string;
+  /** Faint hint shown while empty, e.g. last session's number */
+  placeholder?: string;
   className?: string;
 }) {
   const [text, setText] = useState(value === 0 ? "" : String(value));
@@ -36,7 +39,7 @@ export function NumberInput({
       value={text}
       inputMode={inputMode}
       enterKeyHint="done"
-      placeholder="0"
+      placeholder={placeholder}
       onChange={(e) => {
         const next = e.target.value.replace(/[^0-9.,]/g, "");
         setText(next);
@@ -47,7 +50,7 @@ export function NumberInput({
         const n = parseNum(text);
         setText(n === 0 ? "" : String(n));
       }}
-      className={`min-h-12 w-full min-w-0 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-center text-lg font-semibold text-neutral-100 outline-none focus:border-lime-400 ${className}`}
+      className={`min-h-12 w-full min-w-0 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-center text-lg font-semibold text-neutral-100 outline-none placeholder:font-medium placeholder:text-neutral-600 focus:border-lime-400 ${className}`}
     />
   );
 }

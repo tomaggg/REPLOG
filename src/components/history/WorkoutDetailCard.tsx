@@ -5,6 +5,7 @@ import { GhostButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { formatDate, formatDuration, formatTime } from "~/components/ui/formatters";
 import type { Workout } from "~/types/workout";
+import { prLabel } from "~/lib/records";
 import { bestSet, formatVolume, groupSets } from "~/lib/workout";
 
 export function WorkoutDetailCard({
@@ -67,7 +68,12 @@ export function WorkoutDetailCard({
             <ul className="divide-y divide-neutral-800">
               {group.sets.map((set, i) => (
                 <li key={set.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-neutral-500">Set {i + 1}</span>
+                  <span className="text-neutral-500">
+                    Set {i + 1}
+                    {set.pr ? (
+                      <span className="ml-2 text-xs font-bold text-amber-400">🏆 {prLabel(set.pr)}</span>
+                    ) : null}
+                  </span>
                   <span className="font-semibold text-neutral-100">
                     {set.weight} {set.unit} × {set.reps}
                   </span>

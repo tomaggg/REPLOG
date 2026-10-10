@@ -1,7 +1,8 @@
 import { Card } from "~/components/ui/Card";
 import { HistoryIcon } from "~/components/ui/icons";
 import type { Exercise, ExerciseHistory, SetEntry } from "~/types/workout";
-import { bestSet, type SetGroup } from "~/lib/workout";
+import { findPRs } from "~/lib/records";
+import { bestSet, previousSet, type SetGroup } from "~/lib/workout";
 import { SetRow } from "./SetRow";
 
 function nextSetSeed(group: SetGroup, history: ExerciseHistory | undefined) {
@@ -35,6 +36,7 @@ export function ExerciseCard({
 }) {
   const seed = nextSetSeed(group, history);
   const best = bestSet(group.sets);
+  const prs = findPRs(group.sets, history);
 
   const lastSets = (history?.last ?? []).filter((s) => s.weight > 0 || s.reps > 0);
   const lastSetCount = lastSets.length;
@@ -120,6 +122,8 @@ export function ExerciseCard({
             set={s}
             index={idx + 1}
             exerciseName={group.exerciseName}
+            previous={previousSet(history, idx, s.unit)}
+            pr={prs.get(s.id)}
             onEdit={(patch) => onEditSet(s.id, patch)}
             onToggleDone={() => onToggleSetDone(s.id)}
             onRemove={() => onRemoveSet(s.id)}

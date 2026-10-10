@@ -6,6 +6,8 @@ import type {
   Workout,
 } from "~/types/workout";
 import { newId } from "./id";
+import { recordsOf } from "./records";
+import { convertWeight } from "./weight";
 
 export function emptyWorkout(): Workout {
   return { id: newId(), startedAt: Date.now(), finishedAt: null, note: "", sets: [] };
@@ -66,6 +68,20 @@ export function completedSets(sets: SetEntry[]): SetEntry[] {
   return renumberSets(sets.filter((s) => s.done));
 }
 
+/**
+ * Last session's numbers for set number `position` (0-based), in `unit`.
+ * If last time had fewer sets, the final one is the best guess.
+ */
+export function previousSet(
+  history: ExerciseHistory | undefined,
+  position: number,
+  unit: Unit,
+): { weight: number; reps: number } | undefined {
+  const last = (history?.last ?? []).filter((s) => s.weight > 0 || s.reps > 0);
+  const set = last[position] ?? last[last.length - 1];
+  return set && { weight: convertWeight(set.weight, set.unit, unit), reps: set.reps };
+}
+
 /** Heaviest set; ties go to the one with more reps. */
 export function bestSet(sets: SetEntry[]): SetEntry | null {
   let best: SetEntry | null = null;
@@ -88,7 +104,7 @@ export function buildExerciseHistory(workouts: Workout[]): Record<string, Exerci
   for (const w of workouts) {
     if (!w.finishedAt) continue;
     for (const group of groupSets(w.sets)) {
-      const entry = out[group.exerciseId] ?? { last: [], best: null, sessions: 0 };
+      const entry = out[group.exerciseId] ?? { last: [], best: null, sessions: 0, records: null };
       entry.sessions += 1;
       // The first workout we see is the newest, so that's "last time"
       if (entry.last.length === 0) entry.last = group.sets;
@@ -100,6 +116,7 @@ export function buildExerciseHistory(workouts: Workout[]): Record<string, Exerci
 
   for (const [exerciseId, sets] of allSets) {
     out[exerciseId].best = bestSet(sets);
+    out[exerciseId].records = recordsOf(sets);
   }
   return out;
 }

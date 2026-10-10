@@ -21,6 +21,7 @@ export function WorkoutHistoryList({ workouts }: { workouts: Workout[] }) {
       {workouts.map((workout) => {
         const safeSets = Array.isArray(workout.sets) ? workout.sets : [];
         const names = [...new Set(safeSets.map((s) => s.exerciseName))];
+        const prCount = safeSets.filter((s) => s.pr).length;
         return (
           <Link
             key={workout.id}
@@ -43,6 +44,11 @@ export function WorkoutHistoryList({ workouts }: { workouts: Workout[] }) {
               <p className="text-xs text-neutral-500">
                 {safeSets.length} set{safeSets.length === 1 ? "" : "s"} · {formatVolume(workout)}{" "}
                 total
+                {prCount > 0 ? (
+                  <span className="ml-2 font-bold text-amber-400">
+                    🏆 {prCount} PR{prCount === 1 ? "" : "s"}
+                  </span>
+                ) : null}
               </p>
               {workout.note ? (
                 <p className="truncate pt-1 text-xs italic text-neutral-500">{workout.note}</p>
