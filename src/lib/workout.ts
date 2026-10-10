@@ -51,6 +51,21 @@ export function groupSets(sets: SetEntry[]): SetGroup[] {
   return [...groups.values()];
 }
 
+/** Number each exercise's sets 1, 2, 3… in the order they appear. */
+export function renumberSets(sets: SetEntry[]): SetEntry[] {
+  const counts = new Map<string, number>();
+  return sets.map((s) => {
+    const n = (counts.get(s.exerciseId) ?? 0) + 1;
+    counts.set(s.exerciseId, n);
+    return { ...s, setIndex: n };
+  });
+}
+
+/** The sets that were ticked off as done — what a finished workout keeps. */
+export function completedSets(sets: SetEntry[]): SetEntry[] {
+  return renumberSets(sets.filter((s) => s.done));
+}
+
 /** Heaviest set; ties go to the one with more reps. */
 export function bestSet(sets: SetEntry[]): SetEntry | null {
   let best: SetEntry | null = null;

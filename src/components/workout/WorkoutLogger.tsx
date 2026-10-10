@@ -15,11 +15,13 @@ import type {
   Workout,
 } from "~/types/workout";
 import { newId } from "~/lib/id";
-import { addRoutineToWorkout, groupSets } from "~/lib/workout";
+import { unlockSound } from "~/lib/alert";
+import { addRoutineToWorkout, groupSets, renumberSets } from "~/lib/workout";
 import { ExerciseCard } from "./ExerciseCard";
 import { ExerciseHistoryDrawer } from "./ExerciseHistoryDrawer";
 import { ExercisePickerModal } from "./ExercisePickerModal";
 import { FinishWorkoutModal } from "./FinishWorkoutModal";
+import { RestTimerBar } from "./RestTimerBar";
 import { RoutinePickerModal } from "./RoutinePickerModal";
 
 function withAddedSet(sets: SetEntry[], exercise: Exercise, weight: number, reps: number, unit: Unit) {
@@ -32,14 +34,7 @@ function withAddedSet(sets: SetEntry[], exercise: Exercise, weight: number, reps
 
 /** Remove one set, then renumber each exercise's sets 1, 2, 3… */
 function withoutSet(sets: SetEntry[], setId: string): SetEntry[] {
-  const counts = new Map<string, number>();
-  return sets
-    .filter((s) => s.id !== setId)
-    .map((s) => {
-      const c = (counts.get(s.exerciseId) ?? 0) + 1;
-      counts.set(s.exerciseId, c);
-      return { ...s, setIndex: c };
-    });
+  return renumberSets(sets.filter((s) => s.id !== setId));
 }
 
 export function WorkoutLogger({
@@ -51,6 +46,8 @@ export function WorkoutLogger({
   onChange,
   onFinish,
   onDiscard,
+  restSeconds,
+  onRestSecondsChange,
 }: {
   draft: Workout;
   history: Record<string, ExerciseHistory>;
@@ -60,6 +57,9 @@ export function WorkoutLogger({
   onChange: (next: Workout) => void;
   onFinish: (details: FinishDetails) => void;
   onDiscard: () => void;
+  /** Rest timer length, started each time a set is ticked off */
+  restSeconds: number;
+  onRestSecondsChange: (seconds: number) => void;
 }) {
   const { customExercises } = useCustomExercises();
   const [picking, setPicking] = useState(false);
@@ -80,6 +80,7 @@ export function WorkoutLogger({
     [draft.sets],
   );
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
+  const doneSets = safeSets.filter((s) => s.done);
 
   function setSets(sets: SetEntry[]) {
     onChange({ ...draft, sets });
@@ -91,6 +92,29 @@ export function WorkoutLogger({
 
   function updateSet(setId: string, patch: Partial<SetEntry>) {
     setSets(safeSets.map((s) => (s.id === setId ? { ...s, ...patch } : s)));
+  }
+
+  /** Tick a set on or off. Ticking one on starts the rest timer. */
+  function toggleDone(setId: string) {
+    const nowDone = !safeSets.find((s) => s.id === setId)?.done;
+    const sets = safeSets.map((s) => (s.id === setId ? { ...s, done: nowDone } : s));
+    if (nowDone) {
+      unlockSound(); // must happen during a tap so the end-of-rest beep is allowed
+      onChange({ ...draft, sets, restEndsAt: Date.now() + restSeconds * 1000 });
+    } else {
+      setSets(sets);
+    }
+  }
+
+  /** −15s / +15s on the running timer; also becomes the length of future rests. */
+  function adjustRest(seconds: number) {
+    if (!draft.restEndsAt) return;
+    onChange({ ...draft, restEndsAt: Math.max(Date.now(), draft.restEndsAt + seconds * 1000) });
+    onRestSecondsChange(restSeconds + seconds);
+  }
+
+  function endRest() {
+    onChange({ ...draft, restEndsAt: undefined });
   }
 
   function removeExercise(exerciseId: string) {
@@ -150,6 +174,7 @@ export function WorkoutLogger({
           onRemoveExercise={() => removeExercise(group.exerciseId)}
           onAddSet={(w, r) => addSet({ id: group.exerciseId, name: group.exerciseName, group: "" }, w, r)}
           onEditSet={updateSet}
+          onToggleSetDone={toggleDone}
           onRemoveSet={(setId) => setSets(withoutSet(safeSets, setId))}
         />
       ))}
@@ -167,6 +192,10 @@ export function WorkoutLogger({
         <PrimaryButton onClick={() => setFinishOpen(true)} disabled={busy} className="mt-6 w-full">
           {busy ? "Saving session…" : "Finish Workout"}
         </PrimaryButton>
+      ) : null}
+
+      {draft.restEndsAt ? (
+        <RestTimerBar endsAt={draft.restEndsAt} onAdjust={adjustRest} onDismiss={endRest} />
       ) : null}
 
       {/* Modals and drawers */}
@@ -194,8 +223,9 @@ export function WorkoutLogger({
       {finishOpen ? (
         <FinishWorkoutModal
           draft={draft}
-          exerciseCount={groups.length}
-          setCount={safeSets.length}
+          exerciseCount={new Set(doneSets.map((s) => s.exerciseId)).size}
+          doneSetCount={doneSets.length}
+          totalSetCount={safeSets.length}
           busy={busy}
           onChange={onChange}
           onFinish={onFinish}

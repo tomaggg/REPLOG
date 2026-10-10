@@ -160,6 +160,24 @@ export function NotesIcon(props: IconProps) {
   );
 }
 
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth={3} {...props}>
+      <polyline points="20 6 9 17 4 12" />
+    </Icon>
+  );
+}
+
+/** An "×" — remove / close. Same weight as CheckIcon so they sit well together. */
+export function CloseIcon(props: IconProps) {
+  return (
+    <Icon strokeWidth={3} {...props}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </Icon>
+  );
+}
+
 /** Box with an arrow pointing up — the iPhone-style "share" icon. */
 export function ShareIcon(props: IconProps) {
   return (

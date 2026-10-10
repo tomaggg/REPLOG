@@ -15,6 +15,8 @@ export interface UserProfile {
   height: number;
   onboarded: boolean;
   updatedAt: number;
+  /** Rest timer length between sets, in seconds. */
+  restSeconds?: number;
 }
 
 export interface WeightEntry {
@@ -46,6 +48,8 @@ export interface SetEntry {
   weight: number;
   reps: number;
   unit: Unit;
+  /** Ticked off while logging. Only done sets are kept when a workout is finished. */
+  done?: boolean;
 }
 
 /**
@@ -60,6 +64,8 @@ export interface Workout {
   finishedAt: number | null;
   note: string;
   sets: SetEntry[];
+  /** While resting between sets: when the rest timer runs out (epoch ms). */
+  restEndsAt?: number;
 }
 
 /** One exercise inside a routine template. */

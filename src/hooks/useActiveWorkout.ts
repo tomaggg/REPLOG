@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "~/context/StoreContext";
 import { errorMessage } from "~/lib/errors";
-import { emptyWorkout } from "~/lib/workout";
+import { completedSets, emptyWorkout } from "~/lib/workout";
 import type { Workout } from "~/types/workout";
 
 /** Wait this long after the last edit before saving, so typing doesn't cause a write per keystroke. */
@@ -83,14 +83,11 @@ export function useActiveWorkout() {
     };
   }, [flush]);
 
-  // The latest workout, so update() can compare against it
   const latest = useRef(workout);
   latest.current = workout;
 
   const update = useCallback(
     (next: Workout) => {
-      // The clock starts when the first exercise is added (Add Exercise or a
-      // routine), not when the page was opened or a note was typed
       const firstExercise = latest.current.sets.length === 0 && next.sets.length > 0;
       const toSave = firstExercise ? { ...next, startedAt: Date.now() } : next;
       started.current = true;
@@ -116,7 +113,13 @@ export function useActiveWorkout() {
     setBusy(true);
     setError(null);
     try {
-      await store.saveWorkout({ ...workout, ...details });
+      // Keep only the sets that were ticked off; a rest timer means nothing once finished
+      await store.saveWorkout({
+        ...workout,
+        ...details,
+        sets: completedSets(workout.sets),
+        restEndsAt: undefined,
+      });
       reset();
       return true;
     } catch (err) {

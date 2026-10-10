@@ -81,7 +81,8 @@ function DateTimeField({
 export function FinishWorkoutModal({
   draft,
   exerciseCount,
-  setCount,
+  doneSetCount,
+  totalSetCount,
   busy,
   onChange,
   onFinish,
@@ -89,7 +90,8 @@ export function FinishWorkoutModal({
 }: {
   draft: Workout;
   exerciseCount: number;
-  setCount: number;
+  doneSetCount: number;
+  totalSetCount: number;
   busy: boolean;
   onChange: (next: Workout) => void;
   onFinish: (details: FinishDetails) => void;
@@ -99,6 +101,7 @@ export function FinishWorkoutModal({
   const [finishedAt, setFinishedAt] = useState<number>(Date.now());
   const [note, setNote] = useState<string>(draft.note || "");
   const [error, setError] = useState<string | null>(null);
+  const unticked = totalSetCount - doneSetCount;
 
   useEffect(() => {
     if ((draft.note ?? "") !== note) {
@@ -128,10 +131,18 @@ export function FinishWorkoutModal({
             <span className="font-semibold text-neutral-100">{exerciseCount}</span>
           </div>
           <div className="flex justify-between text-neutral-300">
-            <span>Total sets</span>
-            <span className="font-semibold text-neutral-100">{setCount}</span>
+            <span>Completed sets</span>
+            <span className="font-semibold text-neutral-100">{doneSetCount}</span>
           </div>
         </div>
+
+        {doneSetCount === 0 ? (
+          <Banner tone="error">Tick off at least one set (✓) to save this workout.</Banner>
+        ) : unticked > 0 ? (
+          <Banner tone="info">
+            {unticked} unticked {unticked === 1 ? "set" : "sets"} won't be saved.
+          </Banner>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <DateTimeField label="Start Time" value={startedAt} onChange={setStartedAt} />
@@ -168,7 +179,7 @@ export function FinishWorkoutModal({
           <Button
             variant="primary"
             size="md"
-            disabled={busy || finishedAt <= startedAt}
+            disabled={busy || doneSetCount === 0 || finishedAt <= startedAt}
             onClick={save}
           >
             {busy ? "Saving…" : "Save & Finish"}

@@ -20,6 +20,7 @@ export function ExerciseCard({
   onRemoveExercise,
   onAddSet,
   onEditSet,
+  onToggleSetDone,
   onRemoveSet,
 }: {
   group: SetGroup;
@@ -29,6 +30,7 @@ export function ExerciseCard({
   onRemoveExercise: () => void;
   onAddSet: (weight: number, reps: number) => void;
   onEditSet: (setId: string, patch: Partial<SetEntry>) => void;
+  onToggleSetDone: (setId: string) => void;
   onRemoveSet: (setId: string) => void;
 }) {
   const seed = nextSetSeed(group, history);
@@ -119,6 +121,7 @@ export function ExerciseCard({
             index={idx + 1}
             exerciseName={group.exerciseName}
             onEdit={(patch) => onEditSet(s.id, patch)}
+            onToggleDone={() => onToggleSetDone(s.id)}
             onRemove={() => onRemoveSet(s.id)}
           />
         ))}

@@ -6,6 +6,7 @@ import { Spinner } from "~/components/ui/Spinner";
 import { WorkoutLogger } from "~/components/workout/WorkoutLogger";
 import { useStore } from "~/context/StoreContext";
 import { useActiveWorkout, type FinishDetails } from "~/hooks/useActiveWorkout";
+import { useRestSeconds } from "~/hooks/useRestSeconds";
 import { useWorkouts } from "~/hooks/useWorkouts";
 import { buildExerciseHistory } from "~/lib/workout";
 
@@ -27,11 +28,12 @@ function WorkoutDashboard() {
   const { unit } = useStore();
   const active = useActiveWorkout();
   const past = useWorkouts();
+  const [restSeconds, setRestSeconds] = useRestSeconds();
 
   const exerciseHistory = useMemo(() => buildExerciseHistory(past.workouts), [past.workouts]);
 
   async function handleFinish(details: FinishDetails) {
-    if (active.workout.sets.length === 0) return;
+    if (!active.workout.sets.some((s) => s.done)) return;
     const saved = await active.finish(details);
     if (saved) await past.refresh();
   }
@@ -56,6 +58,8 @@ function WorkoutDashboard() {
       onChange={active.update}
       onFinish={(details) => void handleFinish(details)}
       onDiscard={handleDiscard}
+      restSeconds={restSeconds}
+      onRestSecondsChange={setRestSeconds}
     />
   );
 }
