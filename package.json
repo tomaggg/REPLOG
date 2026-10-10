@@ -13,6 +13,7 @@
     "@firebase/firestore": "^4.9.0",
     "@tanstack/react-router": "^1.158.1",
     "@tanstack/react-start": "^1.158.3",
+    "nitro": "^3.0.260903-beta",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
