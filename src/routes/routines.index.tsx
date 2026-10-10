@@ -11,7 +11,7 @@ import { Spinner } from "~/components/ui/Spinner";
 import { ExercisePickerModal } from "~/components/workout/ExercisePickerModal";
 import { useStore } from "~/context/StoreContext";
 import type { Exercise, Routine, RoutineExercise } from "~/types/workout";
-import { newId } from "~/types/workout";
+import { newId, routineSeedSets } from "~/types/workout";
 
 export const Route = createFileRoute("/routines/")({
   component: RoutinesPage,
@@ -157,28 +157,12 @@ function RoutinesDashboard() {
   }
 
   function handleStartWorkoutFromRoutine(routine: Routine) {
-    // Build seed sets for today's workout
-    const initialSets = [];
-    for (const ex of routine.exercises) {
-      for (let s = 1; s <= ex.targetSets; s++) {
-        initialSets.push({
-          id: newId(),
-          exerciseId: ex.exerciseId,
-          exerciseName: ex.exerciseName,
-          setIndex: s,
-          weight: 0,
-          reps: 0,
-          unit,
-        });
-      }
-    }
-
     const newWorkout = {
       id: newId(),
       startedAt: Date.now(),
       finishedAt: null,
       note: `Routine: ${routine.name}`,
-      sets: initialSets,
+      sets: routineSeedSets(routine, unit),
     };
 
     try {

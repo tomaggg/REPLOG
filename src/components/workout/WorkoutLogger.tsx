@@ -6,10 +6,11 @@ import { Modal } from "~/components/ui/Modal";
 import { formatDuration, formatTime } from "~/components/ui/formatters";
 import { BUILTIN_EXERCISES } from "~/services/exercises";
 import { useStore } from "~/context/StoreContext";
-import type { Exercise, SetEntry, Unit, Workout } from "~/types/workout";
-import { bestSet, groupSets, newId } from "~/types/workout";
+import type { Exercise, Routine, SetEntry, Unit, Workout } from "~/types/workout";
+import { bestSet, groupSets, newId, routineSeedSets } from "~/types/workout";
 import { ExerciseHistoryDrawer, type ExerciseHistory } from "./ExerciseHistoryDrawer";
 import { ExercisePickerModal } from "./ExercisePickerModal";
+import { RoutinePickerModal } from "./RoutinePickerModal";
 
 function parseNum(v: string): number {
   const n = Number(v.replace(",", "."));
@@ -268,6 +269,7 @@ export function WorkoutLogger({
   const { store } = useStore();
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [picking, setPicking] = useState(false);
+  const [pickingRoutine, setPickingRoutine] = useState(false);
   const [inspecting, setInspecting] = useState<string | null>(null);
 
   // Finish-review modal
@@ -359,6 +361,17 @@ export function WorkoutLogger({
       renumbered.push({ ...s, setIndex: c });
     }
     onChange({ ...draft, sets: renumbered });
+  }
+
+  function startRoutine(routine: Routine) {
+    // Skip exercises already in this session so their logged sets aren't duplicated
+    const present = new Set(safeSets.map((s) => s.exerciseId));
+    const seeded = routineSeedSets(routine, unit).filter((s) => !present.has(s.exerciseId));
+    onChange({
+      ...draft,
+      note: draft.note?.trim() ? draft.note : `Routine: ${routine.name}`,
+      sets: [...safeSets, ...seeded],
+    });
   }
 
   function removeExercise(exerciseId: string) {
@@ -521,14 +534,23 @@ export function WorkoutLogger({
         );
       })}
 
-      {/* Add exercise trigger */}
-      <Button
-        variant="secondary"
-        onClick={() => setPicking(true)}
-        className="w-full"
-      >
-        + Add Exercise
-      </Button>
+      {/* Add exercise / start routine triggers */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="secondary"
+          onClick={() => setPicking(true)}
+          className="w-full"
+        >
+          + Add Exercise
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => setPickingRoutine(true)}
+          className="w-full"
+        >
+          ▶ Start Routine
+        </Button>
+      </div>
 
       {/* Finish Session trigger */}
       {safeSets.length > 0 ? (
@@ -547,6 +569,14 @@ export function WorkoutLogger({
           onPick={(ex) => addSet(ex, 0, 0)}
           onClose={() => setPicking(false)}
           excludeIds={groups.map((g) => g.exerciseId)}
+        />
+      ) : null}
+
+      {/* Routine Picker Modal */}
+      {pickingRoutine ? (
+        <RoutinePickerModal
+          onPick={startRoutine}
+          onClose={() => setPickingRoutine(false)}
         />
       ) : null}
 

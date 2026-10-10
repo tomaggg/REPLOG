@@ -113,6 +113,25 @@ export function emptyWorkout(id: string): Workout {
   return { id, startedAt: Date.now(), finishedAt: null, note: "", sets: [] };
 }
 
+/** Placeholder (0 × 0) sets for each exercise in a routine, to be filled in while logging. */
+export function routineSeedSets(routine: Routine, unit: Unit): SetEntry[] {
+  const out: SetEntry[] = [];
+  for (const ex of routine.exercises) {
+    for (let s = 1; s <= ex.targetSets; s++) {
+      out.push({
+        id: newId(),
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        setIndex: s,
+        weight: 0,
+        reps: 0,
+        unit,
+      });
+    }
+  }
+  return out;
+}
+
 export function newId(): string {
   const c = globalThis.crypto;
   if (c && "randomUUID" in c) return c.randomUUID();
