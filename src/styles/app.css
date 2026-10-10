@@ -12,7 +12,13 @@
   }
 }
 
-/* Custom scrollbar styling for professional UI */
+@utility pt-safe {
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
+}
+@utility pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

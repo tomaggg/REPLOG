@@ -18,8 +18,9 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="w-full max-w-md rounded-t-3xl border border-neutral-800 bg-neutral-900 p-5 shadow-xl sm:rounded-3xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 pt-safe backdrop-blur-sm sm:items-center sm:p-4">
+      {/* Never taller than the screen below the status bar; scrolls if the content is longer */}
+      <div className="max-h-full w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-neutral-800 bg-neutral-900 p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-xl sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-neutral-100">{title}</h2>
           <button

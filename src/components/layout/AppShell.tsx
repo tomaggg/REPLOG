@@ -11,7 +11,7 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-dvh bg-neutral-950 text-neutral-100 antialiased">
-      <div className="mx-auto w-full max-w-md px-4 pt-4 pb-28">
+      <div className="mx-auto w-full max-w-md px-4 pt-safe pb-[calc(env(safe-area-inset-bottom)+7rem)]">
         <AppHeader />
         <main>{children}</main>
       </div>

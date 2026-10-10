@@ -61,8 +61,8 @@ export function OnboardingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-3xl border border-neutral-800 bg-neutral-900 p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 pt-safe pb-safe backdrop-blur-md">
+      <div className="max-h-full w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-neutral-800 bg-neutral-900 p-6 shadow-2xl">
         <div className="space-y-1 text-center">
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
             Welcome to RepLog
