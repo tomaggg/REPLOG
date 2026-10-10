@@ -28,7 +28,20 @@ function WorkoutDashboard() {
   const { user } = useAuth();
 
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [draft, setDraft] = useState<Workout | null>(null);
+  const [draft, setDraft] = useState<Workout | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("replog_active_draft");
+        if (saved) {
+          sessionStorage.removeItem("replog_active_draft");
+          return JSON.parse(saved);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +59,19 @@ function WorkoutDashboard() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Check if draft was set while navigating to "/"
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("replog_active_draft");
+      if (saved) {
+        sessionStorage.removeItem("replog_active_draft");
+        setDraft(JSON.parse(saved));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const currentDraft = draft ?? emptyWorkout(newId());
 

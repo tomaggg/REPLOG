@@ -58,14 +58,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <AppShell showNav={false}>
         <OnboardingModal
-          onComplete={() => {
-            setProfile({
-              unit: "kg",
-              bodyWeight: 0,
-              height: 0,
-              onboarded: true,
-              updatedAt: Date.now(),
-            });
+          onComplete={async () => {
+            if (store) {
+              const p = await store.getProfile();
+              if (p) setProfile(p);
+            }
             setProfileChecked(true);
           }}
         />

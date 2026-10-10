@@ -42,6 +42,7 @@ export function OnboardingModal({
     try {
       const profile: UserProfile = {
         unit: weightUnit,
+        initialWeightUnit: weightUnit,
         bodyWeight: weightNum,
         height: heightNum,
         onboarded: true,

@@ -1,6 +1,8 @@
 import type {
   AuthUser,
   DataStore,
+  Exercise,
+  Routine,
   UserProfile,
   WeightEntry,
   Workout,
@@ -12,6 +14,8 @@ let memoryUser: AuthUser | null = null;
 const memoryWorkouts = new Map<string, Workout[]>();
 const memoryProfiles = new Map<string, UserProfile>();
 const memoryWeightLogs = new Map<string, WeightEntry[]>();
+const memoryRoutines = new Map<string, Routine[]>();
+const memoryCustomExercises = new Map<string, Exercise[]>();
 
 export function createDemoStore(): DataStore {
   const listeners = new Set<(u: AuthUser | null) => void>();
@@ -88,6 +92,52 @@ export function createDemoStore(): DataStore {
       };
       currentLogs.unshift(entry);
       memoryWeightLogs.set(memoryUser.uid, currentLogs);
+    },
+    async listRoutines() {
+      if (!memoryUser) return [];
+      const list = memoryRoutines.get(memoryUser.uid) ?? [];
+      return [...list].sort((a, b) => b.createdAt - a.createdAt);
+    },
+    async saveRoutine(routine) {
+      if (!memoryUser) throw new StoreError("Must be logged in.");
+      const list = memoryRoutines.get(memoryUser.uid) ?? [];
+      const idx = list.findIndex((r) => r.id === routine.id);
+      if (idx >= 0) {
+        list[idx] = routine;
+      } else {
+        list.unshift(routine);
+      }
+      memoryRoutines.set(memoryUser.uid, list);
+    },
+    async deleteRoutine(routineId) {
+      if (!memoryUser) throw new StoreError("Must be logged in.");
+      const list = (memoryRoutines.get(memoryUser.uid) ?? []).filter(
+        (r) => r.id !== routineId,
+      );
+      memoryRoutines.set(memoryUser.uid, list);
+    },
+    async listCustomExercises() {
+      if (!memoryUser) return [];
+      const list = memoryCustomExercises.get(memoryUser.uid) ?? [];
+      return [...list];
+    },
+    async saveCustomExercise(exercise) {
+      if (!memoryUser) throw new StoreError("Must be logged in.");
+      const list = memoryCustomExercises.get(memoryUser.uid) ?? [];
+      const idx = list.findIndex((e) => e.id === exercise.id);
+      if (idx >= 0) {
+        list[idx] = exercise;
+      } else {
+        list.push(exercise);
+      }
+      memoryCustomExercises.set(memoryUser.uid, list);
+    },
+    async deleteCustomExercise(exerciseId) {
+      if (!memoryUser) throw new StoreError("Must be logged in.");
+      const list = (memoryCustomExercises.get(memoryUser.uid) ?? []).filter(
+        (e) => e.id !== exerciseId,
+      );
+      memoryCustomExercises.set(memoryUser.uid, list);
     },
   };
 }

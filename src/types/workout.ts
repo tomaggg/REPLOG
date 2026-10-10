@@ -9,6 +9,7 @@ export interface AuthUser {
 
 export interface UserProfile {
   unit: Unit;
+  initialWeightUnit?: Unit;
   bodyWeight: number;
   height: number;
   onboarded: boolean;
@@ -22,11 +23,15 @@ export interface WeightEntry {
   unit: Unit;
 }
 
-/** A lift you can log. The built-in library lives in code. */
+/** A lift you can log. Includes built-in exercises and user custom exercises. */
 export interface Exercise {
   id: string;
   name: string;
   group: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  notes?: string;
+  isCustom?: boolean;
 }
 
 /** One set: weight lifted, reps performed, for an exercise. */
@@ -53,6 +58,21 @@ export interface Workout {
   sets: SetEntry[];
 }
 
+/** A pre-configured routine template */
+export interface RoutineExercise {
+  exerciseId: string;
+  exerciseName: string;
+  targetSets: number;
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  description?: string;
+  exercises: RoutineExercise[];
+  createdAt: number;
+}
+
 /** Everything the app does with accounts and data goes through this interface. */
 export interface DataStore {
   kind: "firebase" | "demo";
@@ -67,6 +87,12 @@ export interface DataStore {
   saveProfile(profile: UserProfile): Promise<void>;
   listWeightLogs(): Promise<WeightEntry[]>;
   logBodyWeight(weight: number, unit: Unit): Promise<void>;
+  listRoutines(): Promise<Routine[]>;
+  saveRoutine(routine: Routine): Promise<void>;
+  deleteRoutine(routineId: string): Promise<void>;
+  listCustomExercises(): Promise<Exercise[]>;
+  saveCustomExercise(exercise: Exercise): Promise<void>;
+  deleteCustomExercise(exerciseId: string): Promise<void>;
 }
 
 export interface FirebaseConfig {

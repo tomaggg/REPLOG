@@ -20,12 +20,19 @@ import {
 import type {
   AuthUser,
   DataStore,
+  Exercise,
   FirebaseConfig,
+  Routine,
   UserProfile,
   WeightEntry,
   Workout,
 } from "~/types/workout";
 import { StoreError, newId } from "~/types/workout";
+
+/** Recursively remove undefined values from an object so Firestore doesn't reject it. */
+function stripUndefined<T extends object>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj)) as T;
+}
 
 export async function createFirebaseStore(
   config: FirebaseConfig,
@@ -107,7 +114,7 @@ export async function createFirebaseStore(
       const u = requireUser();
       const ref = doc(db, "users", u.uid, "workouts", workout.id);
       try {
-        await setDoc(ref, workout);
+        await setDoc(ref, stripUndefined(workout));
       } catch (err) {
         throw new StoreError(
           err instanceof Error
@@ -147,7 +154,7 @@ export async function createFirebaseStore(
       const u = requireUser();
       const ref = doc(db, "users", u.uid, "profile", "main");
       try {
-        await setDoc(ref, profile);
+        await setDoc(ref, stripUndefined(profile));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
@@ -179,13 +186,86 @@ export async function createFirebaseStore(
       };
 
       try {
-        await setDoc(ref, entry);
+        await setDoc(ref, stripUndefined(entry));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
           throw new StoreError("Firestore permission error: Please update your Firestore Security Rules in the Firebase console to match /users/{userId}/{document=**}.");
         }
         throw new StoreError(`Could not log body weight: ${msg}`);
+      }
+    },
+    async listRoutines() {
+      const u = requireUser();
+      const colRef = collection(db, "users", u.uid, "routines");
+      const q = query(colRef, orderBy("createdAt", "desc"));
+      try {
+        const snap = await getDocs(q);
+        return snap.docs.map((d) => d.data() as Routine);
+      } catch {
+        return [];
+      }
+    },
+    async saveRoutine(routine) {
+      const u = requireUser();
+      const ref = doc(db, "users", u.uid, "routines", routine.id);
+      try {
+        await setDoc(ref, stripUndefined(routine));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
+          throw new StoreError("Firestore permission error: Please update your Firestore Security Rules in the Firebase console to match /users/{userId}/{document=**}.");
+        }
+        throw new StoreError(`Could not save routine: ${msg}`);
+      }
+    },
+    async deleteRoutine(routineId) {
+      const u = requireUser();
+      const ref = doc(db, "users", u.uid, "routines", routineId);
+      try {
+        await deleteDoc(ref);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
+          throw new StoreError("Firestore permission error: Please update your Firestore Security Rules in the Firebase console to match /users/{userId}/{document=**}.");
+        }
+        throw new StoreError(`Could not delete routine: ${msg}`);
+      }
+    },
+    async listCustomExercises() {
+      const u = requireUser();
+      const colRef = collection(db, "users", u.uid, "customExercises");
+      try {
+        const snap = await getDocs(colRef);
+        return snap.docs.map((d) => d.data() as Exercise);
+      } catch {
+        return [];
+      }
+    },
+    async saveCustomExercise(exercise) {
+      const u = requireUser();
+      const ref = doc(db, "users", u.uid, "customExercises", exercise.id);
+      try {
+        await setDoc(ref, stripUndefined(exercise));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
+          throw new StoreError("Firestore permission error: Please update your Firestore Security Rules in the Firebase console to match /users/{userId}/{document=**}.");
+        }
+        throw new StoreError(`Could not save exercise: ${msg}`);
+      }
+    },
+    async deleteCustomExercise(exerciseId) {
+      const u = requireUser();
+      const ref = doc(db, "users", u.uid, "customExercises", exerciseId);
+      try {
+        await deleteDoc(ref);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
+          throw new StoreError("Firestore permission error: Please update your Firestore Security Rules in the Firebase console to match /users/{userId}/{document=**}.");
+        }
+        throw new StoreError(`Could not delete exercise: ${msg}`);
       }
     },
   };

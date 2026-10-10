@@ -53,10 +53,38 @@ export const BUILTIN_EXERCISES: Exercise[] = [
 
 export const GROUPS = ["All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core"] as const;
 
-export function searchExercises(query: string): Exercise[] {
+export function searchExercises(
+  query: string,
+  customList: Exercise[] = [],
+  groupFilter: string = "All",
+): Exercise[] {
   const q = query.trim().toLowerCase();
-  if (!q) return BUILTIN_EXERCISES;
-  return BUILTIN_EXERCISES.filter(
-    (e) => e.name.toLowerCase().includes(q) || e.group.toLowerCase().includes(q),
-  );
+
+  // Merge built-in exercises with user customizations (custom exercises take precedence on ID match)
+  const map = new Map<string, Exercise>();
+  for (const ex of BUILTIN_EXERCISES) {
+    map.set(ex.id, ex);
+  }
+  for (const custom of customList) {
+    const existing = map.get(custom.id);
+    if (existing) {
+      map.set(custom.id, { ...existing, ...custom });
+    } else {
+      map.set(custom.id, custom);
+    }
+  }
+
+  const all = Array.from(map.values());
+
+  return all.filter((e) => {
+    const matchesGroup = groupFilter === "All" || e.group.toLowerCase() === groupFilter.toLowerCase();
+    if (!matchesGroup) return false;
+
+    if (!q) return true;
+    return (
+      e.name.toLowerCase().includes(q) ||
+      e.group.toLowerCase().includes(q) ||
+      (e.notes && e.notes.toLowerCase().includes(q))
+    );
+  });
 }

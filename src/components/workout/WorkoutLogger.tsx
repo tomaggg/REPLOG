@@ -3,6 +3,8 @@ import { Banner } from "~/components/ui/Banner";
 import { Button, GhostButton, PrimaryButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { formatDuration, formatTime } from "~/components/ui/formatters";
+import { BUILTIN_EXERCISES } from "~/services/exercises";
+import { useStore } from "~/context/StoreContext";
 import type { Exercise, SetEntry, Unit, Workout } from "~/types/workout";
 import { bestSet, groupSets, newId } from "~/types/workout";
 import { ExerciseHistoryDrawer, type ExerciseHistory } from "./ExerciseHistoryDrawer";
@@ -184,8 +186,37 @@ export function WorkoutLogger({
   onFinish: () => void;
   onDiscard: () => void;
 }) {
+  const { store } = useStore();
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [picking, setPicking] = useState(false);
   const [inspecting, setInspecting] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!store) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await store.listCustomExercises();
+        if (!cancelled) setCustomExercises(list);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [store]);
+
+  const exerciseMap = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    for (const ex of BUILTIN_EXERCISES) {
+      map.set(ex.id, ex);
+    }
+    for (const ex of customExercises) {
+      map.set(ex.id, ex);
+    }
+    return map;
+  }, [customExercises]);
 
   const safeSets = useMemo(() => (Array.isArray(draft?.sets) ? draft.sets : []), [draft?.sets]);
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
@@ -272,19 +303,58 @@ export function WorkoutLogger({
             : { weight: 0, reps: 0 };
 
         const best = bestSet(group.sets);
+        const meta = exerciseMap.get(group.exerciseId);
+
+        // Summarise last session sets for this exercise
+        // Filter out 0kg×0 placeholder sets (e.g. from routine seeds saved without logging)
+        const lastSets = (hist?.last ?? []).filter((s) => s.weight > 0 || s.reps > 0);
+        const lastSetCount = lastSets.length;
+        // Build a compact "Nx W unit × R" summary grouped by weight+reps
+        const lastSummary = lastSets.map((s, i) => (
+          <span key={s.id} className="inline-flex items-center gap-1">
+            <span className="text-neutral-300 font-semibold">{s.weight}</span>
+            <span className="text-neutral-500">{s.unit}</span>
+            <span className="text-neutral-600">×</span>
+            <span className="text-neutral-300 font-semibold">{s.reps}</span>
+            {i < lastSets.length - 1 && <span className="text-neutral-700 mx-0.5">·</span>}
+          </span>
+        ));
 
         return (
           <Card key={group.exerciseId} className="space-y-3">
             <div className="flex items-center justify-between gap-2 border-b border-neutral-800/80 pb-2">
               <div className="min-w-0">
-                <button
-                  type="button"
-                  onClick={() => setInspecting(group.exerciseId)}
-                  className="text-left font-bold text-neutral-100 hover:text-lime-400"
-                >
-                  {group.exerciseName}
-                </button>
-                {best ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setInspecting(group.exerciseId)}
+                    className="text-left font-bold text-neutral-100 hover:text-lime-400"
+                  >
+                    {group.exerciseName}
+                  </button>
+                  {meta?.videoUrl ? (
+                    <a
+                      href={meta.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open video demonstration"
+                      className="inline-flex items-center text-[10px] font-semibold text-lime-400 hover:underline"
+                    >
+                      ▶ Video
+                    </a>
+                  ) : null}
+                  {meta?.notes ? (
+                    <button
+                      type="button"
+                      onClick={() => setInspecting(group.exerciseId)}
+                      title="View form notes"
+                      className="inline-flex items-center text-[10px] text-neutral-400 hover:text-neutral-200"
+                    >
+                      ✎ Notes
+                    </button>
+                  ) : null}
+                </div>
+                {best && best.weight > 0 && best.reps > 0 ? (
                   <p className="text-xs text-lime-400">
                     best: {best.weight} {best.unit} × {best.reps}
                   </p>
@@ -298,6 +368,27 @@ export function WorkoutLogger({
                 Remove
               </button>
             </div>
+
+            {/* Last session history bar */}
+            {lastSetCount > 0 ? (
+              <div className="flex items-start gap-2 rounded-xl border border-neutral-800/60 bg-neutral-950/50 px-3 py-2">
+                <div className="mt-0.5 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 7v5l4 2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                    Last · {lastSetCount} {lastSetCount === 1 ? "set" : "sets"}
+                  </p>
+                  <div className="flex flex-wrap gap-x-0.5 gap-y-0.5 text-[11px]">
+                    {lastSummary}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               {group.sets.map((s, idx) => (
@@ -355,6 +446,7 @@ export function WorkoutLogger({
       {inspecting ? (
         <ExerciseHistoryDrawer
           exerciseName={groups.find((g) => g.exerciseId === inspecting)?.exerciseName ?? ""}
+          exercise={exerciseMap.get(inspecting)}
           history={history[inspecting]}
           onClose={() => setInspecting(null)}
         />
