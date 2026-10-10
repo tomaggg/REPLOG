@@ -1,8 +1,8 @@
 import { Card } from "~/components/ui/Card";
 import { HistoryIcon } from "~/components/ui/icons";
-import type { Exercise, ExerciseHistory, SetEntry, Unit } from "~/types/workout";
+import type { Exercise, ExerciseHistory, SetEntry } from "~/types/workout";
 import { bestSet, type SetGroup } from "~/lib/workout";
-import { AddSetRow, SetRow } from "./SetRow";
+import { SetRow } from "./SetRow";
 
 function nextSetSeed(group: SetGroup, history: ExerciseHistory | undefined) {
   const lastToday = group.sets[group.sets.length - 1];
@@ -16,7 +16,6 @@ export function ExerciseCard({
   group,
   exercise,
   history,
-  unit,
   onInspect,
   onRemoveExercise,
   onAddSet,
@@ -26,7 +25,6 @@ export function ExerciseCard({
   group: SetGroup;
   exercise: Exercise | undefined;
   history: ExerciseHistory | undefined;
-  unit: Unit;
   onInspect: () => void;
   onRemoveExercise: () => void;
   onAddSet: (weight: number, reps: number) => void;
@@ -125,7 +123,15 @@ export function ExerciseCard({
           />
         ))}
 
-        <AddSetRow unit={unit} exerciseName={group.exerciseName} seed={seed} onAdd={onAddSet} />
+        {/* New sets start with the previous set's numbers, ready to edit */}
+        <button
+          type="button"
+          onClick={() => onAddSet(seed.weight, seed.reps)}
+          aria-label={`Add ${group.exerciseName} set`}
+          className="min-h-11 w-full rounded-xl border border-dashed border-neutral-700 text-sm font-semibold text-lime-400 hover:border-lime-400/60 hover:bg-lime-400/5 active:scale-[0.99]"
+        >
+          + Add Set
+        </button>
       </div>
     </Card>
   );

@@ -139,7 +139,6 @@ export function WorkoutLogger({
           group={group}
           exercise={exerciseMap.get(group.exerciseId)}
           history={history[group.exerciseId]}
-          unit={unit}
           onInspect={() => setInspecting(group.exerciseId)}
           onRemoveExercise={() => removeExercise(group.exerciseId)}
           onAddSet={(w, r) => addSet({ id: group.exerciseId, name: group.exerciseName, group: "" }, w, r)}
