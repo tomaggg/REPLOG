@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Banner } from "~/components/ui/Banner";
 import { Button, PrimaryButton } from "~/components/ui/Button";
-import { formatDuration, formatTime } from "~/components/ui/formatters";
+import { ElapsedTimer } from "~/components/ui/ElapsedTimer";
+import { formatTime } from "~/components/ui/formatters";
 import { BUILTIN_EXERCISES } from "~/services/exercises";
 import { useCustomExercises } from "~/hooks/useCustomExercises";
 import type { FinishDetails } from "~/hooks/useActiveWorkout";
@@ -107,8 +108,14 @@ export function WorkoutLogger({
         <div>
           <h2 className="text-lg font-bold text-neutral-100">Today's Session</h2>
           <p className="text-xs text-neutral-500">
-            Started at {formatTime(draft.startedAt)} ·{" "}
-            {formatDuration(draft.startedAt, null)}
+            {safeSets.length > 0 ? (
+              <>
+                Started at {formatTime(draft.startedAt)} ·{" "}
+                <ElapsedTimer startedAt={draft.startedAt} className="font-semibold text-lime-400" />
+              </>
+            ) : (
+              "Add an exercise or start a routine to begin"
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -20,7 +20,7 @@ export function useActiveWorkout() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Has the current workout been changed (and therefore saved) yet?
+  // Has the current workout been changed (and therefore saved to the store) yet?
   const started = useRef(false);
   // The latest unsaved version, and the timer that will save it
   const pendingSave = useRef<Workout | null>(null);
@@ -83,11 +83,18 @@ export function useActiveWorkout() {
     };
   }, [flush]);
 
+  // The latest workout, so update() can compare against it
+  const latest = useRef(workout);
+  latest.current = workout;
+
   const update = useCallback(
     (next: Workout) => {
-      // The clock starts at the first change, not when the page was opened
-      const toSave = started.current ? next : { ...next, startedAt: Date.now() };
+      // The clock starts when the first exercise is added (Add Exercise or a
+      // routine), not when the page was opened or a note was typed
+      const firstExercise = latest.current.sets.length === 0 && next.sets.length > 0;
+      const toSave = firstExercise ? { ...next, startedAt: Date.now() } : next;
       started.current = true;
+      latest.current = toSave;
       setWorkout(toSave);
 
       pendingSave.current = toSave;

@@ -118,6 +118,8 @@ export function addRoutineToWorkout(workout: Workout, routine: Routine, unit: Un
   const seeded = routineSeedSets(routine, unit).filter((s) => !present.has(s.exerciseId));
   return {
     ...workout,
+    // An empty session starts its clock now
+    startedAt: workout.sets.length === 0 ? Date.now() : workout.startedAt,
     note: workout.note.trim() ? workout.note : `Routine: ${routine.name}`,
     sets: [...workout.sets, ...seeded],
   };
