@@ -1,16 +1,18 @@
-import { EditIcon, PlayIcon, TrashIcon } from "~/components/ui/icons";
+import { EditIcon, PlayIcon, ShareIcon, TrashIcon } from "~/components/ui/icons";
 import type { Exercise, Routine } from "~/types/workout";
 
 /** One routine in the Routines list. */
 export function RoutineCard({
   routine,
   customExercises,
+  onShare,
   onEdit,
   onDelete,
   onStart,
 }: {
   routine: Routine;
   customExercises: Exercise[];
+  onShare: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onStart: () => void;
@@ -33,8 +35,16 @@ export function RoutineCard({
           ) : null}
         </div>
 
-        {/* Actions: Edit & Delete */}
+        {/* Actions: Share, Edit & Delete */}
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={onShare}
+            aria-label="Share routine"
+            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-lime-400"
+          >
+            <ShareIcon className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={onEdit}

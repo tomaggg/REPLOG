@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import React, { useEffect } from "react";
 import { AppShell } from "~/components/layout/AppShell";
 import { Spinner } from "~/components/ui/Spinner";
@@ -10,12 +10,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { status } = useStore();
   const { user, authReady, profile, profileReady, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (status === "ready" && authReady && !user) {
-      void navigate({ to: "/auth" });
+      // Remember where they were going (e.g. a shared routine link) for after login
+      void navigate({ to: "/auth", search: { redirect: location.href } });
     }
-  }, [status, authReady, user, navigate]);
+  }, [status, authReady, user, navigate, location.href]);
 
   if (status === "booting" || !authReady || (user && !profileReady)) {
     return (

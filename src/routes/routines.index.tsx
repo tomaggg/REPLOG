@@ -11,6 +11,7 @@ import { useStore } from "~/context/StoreContext";
 import { useCustomExercises } from "~/hooks/useCustomExercises";
 import { useRoutines } from "~/hooks/useRoutines";
 import { errorMessage } from "~/lib/errors";
+import { routineShareUrl } from "~/lib/share";
 import { addRoutineToWorkout, emptyWorkout } from "~/lib/workout";
 import type { Routine } from "~/types/workout";
 
@@ -38,6 +39,8 @@ function RoutinesDashboard() {
   // The editor modal: closed, or open for a new routine (null) or an existing one
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  // A short success message, e.g. "Link copied"
+  const [notice, setNotice] = useState<string | null>(null);
 
   function openEditor(routine: Routine | null) {
     setEditingRoutine(routine);
@@ -54,6 +57,25 @@ function RoutinesDashboard() {
       await refresh();
     } catch (err) {
       setError(errorMessage(err, "Failed to delete routine."));
+    }
+  }
+
+  /** Open the phone's share sheet, or copy the link where that isn't available. */
+  async function shareRoutine(routine: Routine) {
+    const url = routineShareUrl(routine, customExercises, window.location.origin);
+    setError(null);
+    setNotice(null);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `RepLog routine: ${routine.name}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setNotice(`Link to "${routine.name}" copied — paste it to share.`);
+      }
+    } catch (err) {
+      // Closing the share sheet without picking anything isn't an error
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setError(errorMessage(err, "Could not share this routine."));
     }
   }
 
@@ -89,6 +111,7 @@ function RoutinesDashboard() {
       </div>
 
       {error ? <Banner tone="error">{error}</Banner> : null}
+      {notice ? <Banner tone="success">{notice}</Banner> : null}
 
       {loading ? (
         <Spinner label="Loading routines…" />
@@ -101,6 +124,7 @@ function RoutinesDashboard() {
               key={routine.id}
               routine={routine}
               customExercises={customExercises}
+              onShare={() => void shareRoutine(routine)}
               onEdit={() => openEditor(routine)}
               onDelete={() => void deleteRoutine(routine.id)}
               onStart={() => void startWorkout(routine)}
