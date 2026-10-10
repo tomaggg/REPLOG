@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner } from "~/components/ui/Banner";
 import { Button, GhostButton, PrimaryButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
+import { Modal } from "~/components/ui/Modal";
 import { formatDuration, formatTime } from "~/components/ui/formatters";
 import { BUILTIN_EXERCISES } from "~/services/exercises";
 import { useStore } from "~/context/StoreContext";
@@ -167,6 +168,84 @@ function AddSetRow({
   );
 }
 
+export interface WorkoutFinishPatch {
+  startedAt: number;
+  finishedAt: number;
+  note: string;
+}
+
+function toDatetimeLocal(ms: number): string {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
+function fromDatetimeLocal(s: string): number | null {
+  if (!s) return null;
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? t : null;
+}
+
+function formatShort(ms: number): string {
+  try {
+    return new Date(ms).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(ms);
+  }
+}
+
+
+function DateTimeField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (timestamp: number) => void;
+}) {
+  return (
+    <div className="min-w-0 space-y-2">
+      <label className="block text-sm font-semibold text-neutral-300">
+        {label}
+      </label>
+
+      <div className="relative min-w-0">
+        <input
+          type="datetime-local"
+          value={toDatetimeLocal(value)}
+          onChange={(e) => {
+            const timestamp = fromDatetimeLocal(e.target.value);
+            if (timestamp !== null) onChange(timestamp);
+          }}
+          className="
+            block min-h-12 w-full min-w-0 max-w-full
+            appearance-none rounded-xl
+            border border-neutral-700 bg-neutral-950
+            px-3 py-3 text-base text-neutral-100
+            outline-none
+            focus:border-lime-400 focus:ring-1 focus:ring-lime-400
+            [color-scheme:dark]
+          "
+        />
+      </div>
+
+      <p className="text-xs text-neutral-500">
+        {formatShort(value)}
+      </p>
+    </div>
+  );
+}
+
+
 export function WorkoutLogger({
   draft,
   history,
@@ -183,13 +262,38 @@ export function WorkoutLogger({
   busy: boolean;
   error: string | null;
   onChange: (next: Workout) => void;
-  onFinish: () => void;
+  onFinish: (patch: WorkoutFinishPatch) => void;
   onDiscard: () => void;
 }) {
   const { store } = useStore();
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [picking, setPicking] = useState(false);
   const [inspecting, setInspecting] = useState<string | null>(null);
+
+  // Finish-review modal
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [finishStartedAt, setFinishStartedAt] = useState<number>(
+    draft.startedAt,
+  );
+  const [finishFinishedAt, setFinishFinishedAt] = useState<number>(Date.now());
+  const [finishNote, setFinishNote] = useState<string>(draft.note || "");
+  const [finishError, setFinishError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!finishOpen) return;
+    setFinishStartedAt(draft.startedAt);
+    setFinishFinishedAt(Date.now());
+    setFinishNote(draft.note || "");
+    setFinishError(null);
+  }, [finishOpen, draft.startedAt, draft.note]);
+
+
+  useEffect(() => {
+    if (!finishOpen) return;
+    if ((draft.note ?? "") !== finishNote) {
+      onChange({ ...draft, note: finishNote });
+    }
+  }, [finishNote, finishOpen, draft, onChange]);
 
   useEffect(() => {
     if (!store) return;
@@ -218,7 +322,10 @@ export function WorkoutLogger({
     return map;
   }, [customExercises]);
 
-  const safeSets = useMemo(() => (Array.isArray(draft?.sets) ? draft.sets : []), [draft?.sets]);
+  const safeSets = useMemo(
+    () => (Array.isArray(draft.sets) ? draft.sets : []),
+    [draft.sets],
+  );
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
 
   function addSet(exercise: Exercise, weight: number, reps: number) {
@@ -266,7 +373,8 @@ export function WorkoutLogger({
         <div>
           <h2 className="text-lg font-bold text-neutral-100">Today's Session</h2>
           <p className="text-xs text-neutral-500">
-            Started at {formatTime(draft.startedAt)} · {formatDuration(draft.startedAt, null)}
+            Started at {formatTime(draft.startedAt)} ·{" "}
+            {formatDuration(draft.startedAt, null)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -425,7 +533,7 @@ export function WorkoutLogger({
       {/* Finish Session trigger */}
       {safeSets.length > 0 ? (
         <PrimaryButton
-          onClick={onFinish}
+          onClick={() => setFinishOpen(true)}
           disabled={busy}
           className="mt-6 w-full"
         >
@@ -450,6 +558,100 @@ export function WorkoutLogger({
           history={history[inspecting]}
           onClose={() => setInspecting(null)}
         />
+      ) : null}
+
+      {/* Finish Workout Review Modal */}
+      {finishOpen ? (
+        <Modal
+          title="Finish Workout"
+          onClose={() => !busy && setFinishOpen(false)}
+        >
+          <div className="space-y-4">
+            {finishError ? <Banner tone="error">{finishError}</Banner> : null}
+
+            {/* Summary */}
+            <div className="rounded-xl border border-neutral-800 bg-neutral-950/60 p-3 space-y-1 text-xs">
+              <div className="flex justify-between text-neutral-300">
+                <span>Exercises</span>
+                <span className="font-semibold text-neutral-100">{groups.length}</span>
+              </div>
+              <div className="flex justify-between text-neutral-300">
+                <span>Total sets</span>
+                <span className="font-semibold text-neutral-100">{safeSets.length}</span>
+              </div>
+            </div>
+
+            {/* Start time */}
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DateTimeField
+                label="Start Time"
+                value={finishStartedAt}
+                onChange={setFinishStartedAt}
+              />
+
+              <DateTimeField
+                label="End Time"
+                value={finishFinishedAt}
+                onChange={setFinishFinishedAt}
+              />
+            </div>
+
+            {/* Duration */}
+            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs flex justify-between items-center">
+              <span className="text-neutral-400">Duration</span>
+              <span className="font-bold text-lime-400">
+                {formatDuration(finishStartedAt, finishFinishedAt)}
+              </span>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-neutral-400">
+                Session Notes
+              </label>
+              <textarea
+                value={finishNote}
+                onChange={(e) => setFinishNote(e.target.value)}
+                placeholder="e.g. Leg Day · Added 2.5kg to squat, elbows felt good on bench…"
+                rows={4}
+                className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2.5 text-sm text-neutral-100 placeholder-neutral-600 focus:border-lime-400 focus:outline-none"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="secondary"
+                size="md"
+                disabled={busy}
+                onClick={() => setFinishOpen(false)}
+              >
+                Back
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                disabled={busy || finishFinishedAt <= finishStartedAt}
+                onClick={() => {
+                  if (finishFinishedAt <= finishStartedAt) {
+                    setFinishError("End time must be after the start time.");
+                    return;
+                  }
+                  setFinishError(null);
+                  onFinish({
+                    startedAt: finishStartedAt,
+                    finishedAt: finishFinishedAt,
+                    note: finishNote.trim(),
+                  });
+                  setFinishOpen(false);
+                }}
+              >
+                {busy ? "Saving…" : "Save & Finish"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       ) : null}
     </div>
   );

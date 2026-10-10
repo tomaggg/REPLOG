@@ -1,19 +1,15 @@
 import { useNavigate } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { AppShell } from "~/components/layout/AppShell";
 import { Spinner } from "~/components/ui/Spinner";
 import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
-import type { UserProfile } from "~/types/workout";
 import { OnboardingModal } from "./OnboardingModal";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { status, store } = useStore();
-  const { user, authReady } = useAuth();
+  const { status } = useStore();
+  const { user, authReady, profile, profileReady, refreshProfile } = useAuth();
   const navigate = useNavigate();
-
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileChecked, setProfileChecked] = useState(false);
 
   useEffect(() => {
     if (status === "ready" && authReady && !user) {
@@ -21,28 +17,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [status, authReady, user, navigate]);
 
-  useEffect(() => {
-    if (!user || !store) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const p = await store.getProfile();
-        if (!cancelled) {
-          setProfile(p);
-          setProfileChecked(true);
-        }
-      } catch {
-        if (!cancelled) setProfileChecked(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, store]);
-
-  if (status === "booting" || !authReady || (user && !profileChecked)) {
+  // Boot / initial-check spinner. Only shown once per user per app session
+  // (profile is cached in AuthContext across route navigations).
+  if (status === "booting" || !authReady || (user && !profileReady)) {
     return (
       <AppShell showNav={false}>
         <Spinner label="Checking your session…" />
@@ -59,11 +36,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <AppShell showNav={false}>
         <OnboardingModal
           onComplete={async () => {
-            if (store) {
-              const p = await store.getProfile();
-              if (p) setProfile(p);
-            }
-            setProfileChecked(true);
+            await refreshProfile();
           }}
         />
       </AppShell>

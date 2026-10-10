@@ -8,6 +8,7 @@ import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
 import type { Workout } from "~/types/workout";
 import { bestSet, emptyWorkout, newId } from "~/types/workout";
+import type { WorkoutFinishPatch } from "~/components/workout/WorkoutLogger";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -73,7 +74,16 @@ function WorkoutDashboard() {
     }
   }, []);
 
-  const currentDraft = draft ?? emptyWorkout(newId());
+  const currentDraft = ((): Workout => {
+    if (
+      draft &&
+      typeof draft === "object" &&
+      typeof (draft as any).startedAt === "number"
+    ) {
+      return draft;
+    }
+    return emptyWorkout(newId());
+  })();
 
   function persistDraft(next: Workout | null) {
     setDraft(next);
@@ -117,7 +127,7 @@ function WorkoutDashboard() {
     return out;
   }, [workouts]);
 
-  async function handleFinish() {
+  async function handleFinish(patch: WorkoutFinishPatch) {
     const safeSets = Array.isArray(currentDraft.sets) ? currentDraft.sets : [];
     if (!store || busy || safeSets.length === 0) return;
     setBusy(true);
@@ -125,7 +135,9 @@ function WorkoutDashboard() {
     try {
       const finished: Workout = {
         ...currentDraft,
-        finishedAt: Date.now(),
+        startedAt: patch.startedAt,
+        finishedAt: patch.finishedAt,
+        note: patch.note,
       };
       await store.saveWorkout(finished);
       persistDraft(null);
@@ -151,7 +163,7 @@ function WorkoutDashboard() {
       busy={busy}
       error={error}
       onChange={persistDraft}
-      onFinish={() => void handleFinish()}
+      onFinish={(patch) => void handleFinish(patch)}
       onDiscard={handleDiscard}
     />
   );
