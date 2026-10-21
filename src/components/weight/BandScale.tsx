@@ -41,7 +41,7 @@ export function BandScale({
         </div>
       </div>
       {/* Band start values under the bar */}
-      <div className="relative h-3 text-[9px] tabular-nums text-neutral-500">
+      <div className="relative h-4 text-[11px] tabular-nums text-neutral-500">
         {bands.slice(1).map((band) => (
           <span key={band.label} className="absolute -translate-x-1/2" style={{ left: `${pos(band.from)}%` }}>
             {band.from}

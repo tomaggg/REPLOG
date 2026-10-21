@@ -124,21 +124,24 @@ function WeightTrackerDashboard() {
     <div className="space-y-6 pb-14">
       {header}
 
-      <BmiCard bmi={currentBmi} weight={stats?.current ?? null} unit={unit} heightCm={heightCm} />
-
-      <BodyProfileCard
-        sex={profile?.sex}
-        heightCm={heightCm}
-        birthYear={profile?.birthYear}
+      {/* Daily use first: log today's weight without scrolling */}
+      <LogWeightForm
+        value={newWeight}
+        onChange={setNewWeight}
+        onSubmit={() => void logWeight(newWeight, unit, () => setNewWeight(""))}
         unit={unit}
-        editing={editingBody}
-        onEditingChange={setEditingBody}
-        onSave={saveBody}
+        saving={saving}
+        error={error}
+        successMsg={successMsg}
       />
 
-      <BodyFatCard bmi={currentBmi} age={age} sex={profile?.sex} onAddDetails={() => setEditingBody(true)} />
+      <WeightStats
+        stats={stats}
+        unit={unit}
+        points={chronological.map((l) => ({ timestamp: l.timestamp, weight: l.displayWeight }))}
+      />
 
-      <WeightStats stats={stats} unit={unit} startUnit={startUnit} />
+      <BmiCard bmi={currentBmi} weight={stats?.current ?? null} unit={unit} heightCm={heightCm} />
 
       <WeightChart
         chart={chart}
@@ -149,14 +152,17 @@ function WeightTrackerDashboard() {
         bmiAvailable={heightCm !== null}
       />
 
-      <LogWeightForm
-        value={newWeight}
-        onChange={setNewWeight}
-        onSubmit={() => void logWeight(newWeight, unit, () => setNewWeight(""))}
+      <BodyFatCard bmi={currentBmi} age={age} sex={profile?.sex} onAddDetails={() => setEditingBody(true)} />
+
+      {/* Set once, rarely changed */}
+      <BodyProfileCard
+        sex={profile?.sex}
+        heightCm={heightCm}
+        birthYear={profile?.birthYear}
         unit={unit}
-        saving={saving}
-        error={error}
-        successMsg={successMsg}
+        editing={editingBody}
+        onEditingChange={setEditingBody}
+        onSave={saveBody}
       />
 
       <WeightHistoryList logs={displayLogs} unit={unit} loading={loading} heightCm={heightCm} />

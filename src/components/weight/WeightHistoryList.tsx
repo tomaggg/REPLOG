@@ -1,3 +1,4 @@
+import { CollapsibleCard } from "~/components/ui/CollapsibleCard";
 import { Spinner } from "~/components/ui/Spinner";
 import { bmi } from "~/lib/bmi";
 import { longDate, shortTime, type DisplayWeightEntry } from "~/lib/weight";
@@ -15,15 +16,15 @@ export function WeightHistoryList({
   /** Shows each entry's BMI when known */
   heightCm: number | null;
 }) {
-  return (
-    <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5 backdrop-blur-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-neutral-200">History ({logs.length})</h2>
-        <span className="text-[11px] text-neutral-500">
-          All logs converted to {unit.toUpperCase()}
-        </span>
-      </div>
+  const latest = logs[0];
+  const summary = loading
+    ? "Loading…"
+    : latest
+      ? `${logs.length} ${logs.length === 1 ? "entry" : "entries"} · latest ${latest.displayWeight.toFixed(1)} ${unit}`
+      : "No entries yet";
 
+  return (
+    <CollapsibleCard title="History" summary={summary}>
       {loading ? (
         <Spinner label="Loading weight history…" />
       ) : logs.length === 0 ? (
@@ -34,13 +35,13 @@ export function WeightHistoryList({
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-neutral-800/80">
+        <div className="-my-3 divide-y divide-neutral-800/80">
           {logs.map((log) => (
             <HistoryRow key={log.id} log={log} unit={unit} heightCm={heightCm} />
           ))}
         </div>
       )}
-    </div>
+    </CollapsibleCard>
   );
 }
 

@@ -25,7 +25,7 @@ export function UnitSystemToggle({
           type="button"
           aria-pressed={unit === s.unit}
           onClick={() => onChange(s.unit)}
-          className={`rounded-lg px-3 py-1.5 text-left transition-all ${
+          className={`min-h-11 rounded-lg px-3 py-1 text-left transition-all ${
             unit === s.unit
               ? "bg-lime-400 text-neutral-950 shadow-sm"
               : "text-neutral-400 hover:text-neutral-200"

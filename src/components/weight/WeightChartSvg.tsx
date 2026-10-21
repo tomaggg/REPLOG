@@ -1,3 +1,4 @@
+import type React from "react";
 import type { ChartData } from "~/lib/weight";
 
 export interface HoveredPoint {
@@ -27,12 +28,31 @@ export function WeightChartSvg({
   hoveredPoint: HoveredPoint | null;
   onHover: (point: HoveredPoint | null) => void;
 }) {
+  /** Select the entry closest to the finger or mouse, left to right. */
+  function pick(e: React.PointerEvent<SVGSVGElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * chart.width;
+    let nearest = chart.coords[0];
+    for (const pt of chart.coords) {
+      if (Math.abs(pt.x - x) < Math.abs(nearest.x - x)) nearest = pt;
+    }
+    onHover({ date: nearest.dateStr, weight: nearest.weight, unit, x: nearest.x, y: nearest.y });
+  }
+
   return (
     <svg
       viewBox={`0 0 ${chart.width} ${chart.height}`}
-      className="w-full h-48 sm:h-56 touch-none"
-      preserveAspectRatio="none"
-      onMouseLeave={() => onHover(null)}
+      // pan-y: swiping up/down still scrolls the page; tap or drag sideways selects
+      className="h-auto w-full cursor-crosshair touch-pan-y select-none"
+      onPointerDown={pick}
+      onPointerMove={(e) => {
+        // Mouse: follow the cursor. Touch: only while the finger is down.
+        if (e.pointerType === "mouse" || e.buttons > 0) pick(e);
+      }}
+      onPointerLeave={(e) => {
+        // A tap on a phone keeps its value visible; a mouse leaving clears it
+        if (e.pointerType === "mouse") onHover(null);
+      }}
     >
       <defs>
         {/* Green fade under the line */}
@@ -42,7 +62,7 @@ export function WeightChartSvg({
         </linearGradient>
       </defs>
 
-      {/* Grid lines with weight labels */}
+      {/* Grid lines with value labels */}
       {chart.ticks.map((tick, i) => (
         <g key={i}>
           <line
@@ -54,7 +74,7 @@ export function WeightChartSvg({
             strokeDasharray="4 4"
             strokeWidth="1"
           />
-          <text x={chart.padX - 8} y={tick.y + 3} fill={LABEL} fontSize="10" textAnchor="end">
+          <text x={chart.padX - 6} y={tick.y + 4} fill={LABEL} fontSize="11" textAnchor="end">
             {tick.val.toFixed(1)}
           </text>
         </g>
@@ -63,40 +83,31 @@ export function WeightChartSvg({
       <path d={chart.areaPath} fill="url(#weightAreaGrad)" />
       <path d={chart.linePath} fill="none" stroke={LIME} strokeWidth="2.5" strokeLinecap="round" />
 
+      {/* Guide line down from the selected entry */}
+      {hoveredPoint ? (
+        <line
+          x1={hoveredPoint.x}
+          y1={chart.padY}
+          x2={hoveredPoint.x}
+          y2={chart.height - chart.padY}
+          stroke={LABEL}
+          strokeWidth="1"
+          strokeDasharray="3 3"
+        />
+      ) : null}
+
       {/* Data points */}
       {chart.coords.map((pt, i) => {
-        const isHovered =
-          hoveredPoint && hoveredPoint.weight === pt.weight && hoveredPoint.x === pt.x;
-
+        const isHovered = hoveredPoint?.x === pt.x;
         return (
           <g key={i}>
-            {/* Invisible larger circle, so the dot is easy to hover */}
-            <circle
-              cx={pt.x}
-              cy={pt.y}
-              r="16"
-              fill="transparent"
-              className="cursor-pointer"
-              onMouseEnter={() =>
-                onHover({ date: pt.dateStr, weight: pt.weight, unit, x: pt.x, y: pt.y })
-              }
-            />
-            {/* Pulsing ring when hovered */}
             {isHovered ? (
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r="7"
-                fill="none"
-                stroke={LIME}
-                strokeWidth="2"
-                className="animate-pulse"
-              />
+              <circle cx={pt.x} cy={pt.y} r="7" fill="none" stroke={LIME} strokeWidth="2" />
             ) : null}
             <circle
               cx={pt.x}
               cy={pt.y}
-              r={isHovered ? "4" : "3"}
+              r={isHovered ? "4.5" : "3"}
               fill={isHovered ? "#ffffff" : LIME}
               stroke={BACKGROUND}
               strokeWidth="1.5"

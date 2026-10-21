@@ -70,9 +70,25 @@ export function weightStats(weights: number[]): WeightStats | null {
   };
 }
 
-/** "+1.5", "-0.3" or "0.0". */
-export function formatChange(diff: number): string {
-  return diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+/**
+ * Change from the weight around `targetMs` to the latest weight. The baseline is
+ * the entry closest to the target date, before or after it (on a tie, the earlier
+ * one), never the latest entry itself. `points` must be oldest first.
+ * Null when there are no entries.
+ */
+export function weightChangeSince(
+  points: { timestamp: number; weight: number }[],
+  targetMs: number,
+): { diff: number; baselineDate: number } | null {
+  if (points.length === 0) return null;
+  const latest = points[points.length - 1];
+  const candidates = points.length > 1 ? points.slice(0, -1) : points;
+
+  let baseline = candidates[0];
+  for (const p of candidates) {
+    if (Math.abs(p.timestamp - targetMs) < Math.abs(baseline.timestamp - targetMs)) baseline = p;
+  }
+  return { diff: latest.weight - baseline.weight, baselineDate: baseline.timestamp };
 }
 
 /** "Mar 4" */
@@ -130,11 +146,12 @@ export interface ChartData {
   ticks: { val: number; y: number }[];
 }
 
-// SVG viewBox size and the space kept around the plot for labels
-const WIDTH = 600;
-const HEIGHT = 240;
-const PAD_X = 40;
-const PAD_Y = 30;
+// SVG viewBox size and the space kept around the plot for labels.
+// Close to a phone card's real size, so labels aren't shrunk to unreadable.
+const WIDTH = 340;
+const HEIGHT = 190;
+const PAD_X = 36;
+const PAD_Y = 16;
 
 /** Lay out weight logs (oldest first) as SVG points and paths. Null when empty. */
 export function buildWeightChart(

@@ -39,7 +39,7 @@ export function WeightChart({
                 setHoveredPoint(null);
                 onMetricChange(m);
               }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-40 ${
+              className={`min-h-11 rounded-lg px-4 text-xs font-bold disabled:opacity-40 ${
                 metric === m ? "bg-lime-400 text-neutral-950" : "text-neutral-400"
               }`}
             >
@@ -87,7 +87,11 @@ export function WeightChart({
 function DateLabels({ chart }: { chart: ChartData }) {
   const { coords } = chart;
   return (
-    <div className="mt-1 flex justify-between px-6 text-[10px] text-neutral-500">
+    // Inset by the chart's side padding so the dates sit under the first and last points
+    <div
+      className="mt-1 flex justify-between text-[11px] text-neutral-500"
+      style={{ paddingInline: `${(chart.padX / chart.width) * 100}%` }}
+    >
       <span>{coords[0].dateStr}</span>
       {coords.length > 2 ? <span>{coords[Math.floor(coords.length / 2)].dateStr}</span> : null}
       {coords.length > 1 ? <span>{coords[coords.length - 1].dateStr}</span> : null}

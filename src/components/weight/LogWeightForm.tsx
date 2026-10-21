@@ -27,7 +27,7 @@ export function LogWeightForm({
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 shadow-lg backdrop-blur-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-neutral-200">Log Body Weight</h2>
+        <h2 className="text-sm font-bold text-neutral-200">Log today's weight</h2>
         <span className="text-xs font-semibold text-neutral-400">
           Logging in: <span className="text-lime-400 font-bold uppercase">{unit}</span>
         </span>
@@ -50,7 +50,7 @@ export function LogWeightForm({
             label=""
             value={value}
             onChange={onChange}
-            placeholder={`Enter weight in ${unit} (e.g. ${unit === "kg" ? "75.5" : "166.4"})`}
+            placeholder={`e.g. ${unit === "kg" ? "75.5" : "166.4"}`}
             inputMode="decimal"
             suffix={unit}
           />
@@ -58,7 +58,7 @@ export function LogWeightForm({
         <button
           type="submit"
           disabled={saving || !value}
-          className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-lime-400 px-5 text-sm font-bold text-neutral-950 transition-colors hover:bg-lime-300 disabled:opacity-40"
+          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-lime-400 px-5 text-sm font-bold text-neutral-950 transition-colors hover:bg-lime-300 disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save Log"}
         </button>

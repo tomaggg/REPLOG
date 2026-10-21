@@ -46,7 +46,7 @@ export function BodyProfileCard({
         <button
           type="button"
           onClick={() => onEditingChange(true)}
-          className="min-h-10 shrink-0 rounded-xl border border-neutral-700 px-3 text-xs font-bold text-neutral-200 hover:border-lime-400/60 hover:text-lime-400"
+          className="min-h-11 shrink-0 rounded-xl border border-neutral-700 px-4 text-xs font-bold text-neutral-200 hover:border-lime-400/60 hover:text-lime-400"
         >
           {nothingSet ? "Add" : "Edit"}
         </button>

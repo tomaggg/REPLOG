@@ -160,6 +160,15 @@ export function NotesIcon(props: IconProps) {
   );
 }
 
+/** Points down; rotate it 180° for "open". */
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <polyline points="6 9 12 15 18 9" />
+    </Icon>
+  );
+}
+
 export function CheckIcon(props: IconProps) {
   return (
     <Icon strokeWidth={3} {...props}>
