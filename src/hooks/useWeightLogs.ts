@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "~/context/StoreContext";
 import { errorMessage } from "~/lib/errors";
-import { newestFirst, parseWeight } from "~/lib/weight";
+import { convertWeight, newestFirst, parseWeight } from "~/lib/weight";
+import { patchProfile } from "~/services/profile";
 import type { Unit, UserProfile, WeightEntry } from "~/types/workout";
 
 /**
@@ -49,11 +50,13 @@ export function useWeightLogs() {
       setSuccessMsg(null);
       await store.logBodyWeight(val, unit);
       // Keep the profile's body weight in sync with the latest log
-      if (profile) {
-        const updatedProfile = { ...profile, bodyWeight: val, unit, updatedAt: Date.now() };
-        await store.saveProfile(updatedProfile);
-        setProfile(updatedProfile);
-      }
+      setProfile(
+        await patchProfile(store, {
+          bodyWeight: val,
+          unit,
+          initialWeightUnit: profile?.initialWeightUnit ?? unit,
+        }),
+      );
       onSaved();
       setSuccessMsg(`Logged ${val} ${unit} successfully.`);
       setLogs(newestFirst(await store.listWeightLogs()));
@@ -64,5 +67,51 @@ export function useWeightLogs() {
     }
   }
 
-  return { profile, logs, loading, saving, error, successMsg, logWeight };
+  /** Save sex, height or birth year. Returns true on success. */
+  async function saveBody(patch: Pick<UserProfile, "sex" | "heightCm" | "birthYear">) {
+    if (!store) return false;
+    try {
+      // `height` is the old unit-less field; heightCm replaces it
+      setProfile(await patchProfile(store, { ...patch, height: undefined }));
+      return true;
+    } catch (err) {
+      setError(errorMessage(err, "Could not save your body profile."));
+      return false;
+    }
+  }
+
+  /** First-time setup: body details and current weight, saved together. Returns true on success. */
+  async function setUpBody(
+    patch: Pick<UserProfile, "sex" | "heightCm" | "birthYear">,
+    weight: number,
+    unit: Unit,
+  ) {
+    if (!store) return false;
+    try {
+      setSaving(true);
+      setError(null);
+      // Don't log a duplicate when they kept the weight already on record
+      const latest = logs[0];
+      const unchanged = latest && Math.abs(convertWeight(latest.weight, latest.unit, unit) - weight) < 0.05;
+      if (!unchanged) await store.logBodyWeight(weight, unit);
+      setProfile(
+        await patchProfile(store, {
+          ...patch,
+          height: undefined,
+          bodyWeight: weight,
+          unit,
+          initialWeightUnit: profile?.initialWeightUnit ?? unit,
+        }),
+      );
+      setLogs(newestFirst(await store.listWeightLogs()));
+      return true;
+    } catch (err) {
+      setError(errorMessage(err, "Could not save your details."));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return { profile, logs, loading, saving, error, successMsg, logWeight, saveBody, setUpBody };
 }

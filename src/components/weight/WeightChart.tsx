@@ -4,25 +4,48 @@ import type { ChartData } from "~/lib/weight";
 import type { Unit } from "~/types/workout";
 import { WeightChartSvg, type HoveredPoint } from "./WeightChartSvg";
 
+export type ChartMetric = "weight" | "bmi";
+
 export function WeightChart({
   chart,
   unit,
   loading,
+  metric,
+  onMetricChange,
+  bmiAvailable,
 }: {
   chart: ChartData | null;
   unit: Unit;
   loading: boolean;
+  metric: ChartMetric;
+  onMetricChange: (metric: ChartMetric) => void;
+  /** BMI needs a height */
+  bmiAvailable: boolean;
 }) {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
+  const label = metric === "bmi" ? "BMI" : unit;
 
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-5 shadow-lg backdrop-blur-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-neutral-200">Weight Trend</h2>
-          <p className="text-[11px] text-neutral-500">
-            Interactive timeline • Converted dynamically to {unit.toUpperCase()}
-          </p>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div role="group" aria-label="Chart" className="flex gap-1 rounded-xl border border-neutral-800 bg-neutral-950 p-1">
+          {(["weight", "bmi"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={metric === m}
+              disabled={m === "bmi" && !bmiAvailable}
+              onClick={() => {
+                setHoveredPoint(null);
+                onMetricChange(m);
+              }}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-40 ${
+                metric === m ? "bg-lime-400 text-neutral-950" : "text-neutral-400"
+              }`}
+            >
+              {m === "bmi" ? "BMI" : "Weight"}
+            </button>
+          ))}
         </div>
         {hoveredPoint ? (
           <div className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-950 px-2.5 py-1 text-xs">
@@ -49,7 +72,7 @@ export function WeightChart({
         <div className="relative w-full overflow-hidden">
           <WeightChartSvg
             chart={chart}
-            unit={unit}
+            unit={label}
             hoveredPoint={hoveredPoint}
             onHover={setHoveredPoint}
           />

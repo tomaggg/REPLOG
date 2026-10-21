@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
+import { patchProfile } from "~/services/profile";
 
 const DEFAULT_REST_SECONDS = 120;
 const MIN_REST_SECONDS = 15;
@@ -29,10 +30,7 @@ export function useRestSeconds() {
     saveTimer.current = setTimeout(async () => {
       if (!store) return;
       try {
-        // Re-read the profile first so we don't overwrite changes made on other
-        // pages (e.g. body weight) with an old copy
-        const latest = await store.getProfile();
-        if (latest) await store.saveProfile({ ...latest, restSeconds: next });
+        await patchProfile(store, { restSeconds: next });
       } catch {
         // Not worth interrupting a workout over; it just won't be remembered
       }

@@ -1,36 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UserIcon } from "~/components/ui/icons";
 import { Modal } from "~/components/ui/Modal";
 import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
-import type { Unit, UserProfile } from "~/types/workout";
+import { patchProfile } from "~/services/profile";
 
 export function AppHeader() {
   const { user, logOut } = useAuth();
   const { unit, setUnit, store } = useStore();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    if (!profileOpen || !store) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const p = await store.getProfile();
-        if (!cancelled) {
-          setProfile(p);
-        }
-      } catch {
-        // ignore
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [profileOpen, store]);
 
   return (
     <>
@@ -63,23 +42,14 @@ export function AppHeader() {
               <p className="mt-0.5 truncate text-sm font-medium text-neutral-200">{user.email}</p>
             </div>
 
-            {/* Baseline Profile Stats */}
-            {profile ? (
-              <div className="grid grid-cols-2 gap-2 rounded-xl border border-neutral-800 bg-neutral-950 p-3">
-                <div>
-                  <p className="text-xs font-semibold text-neutral-500">Current Body Weight</p>
-                  <p className="mt-0.5 text-base font-bold text-neutral-100">
-                    {profile.bodyWeight ? `${Number(profile.bodyWeight).toFixed(1)} ${profile.unit}` : "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-neutral-500">Height</p>
-                  <p className="mt-0.5 text-base font-bold text-neutral-100">
-                    {profile.height ? `${profile.height} ${profile.unit === "kg" ? "cm" : "in"}` : "—"}
-                  </p>
-                </div>
-              </div>
-            ) : null}
+            <Link
+              to="/weight"
+              onClick={() => setProfileOpen(false)}
+              className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950 p-3 text-sm font-semibold text-neutral-200 hover:border-neutral-700"
+            >
+              <span>Body profile, weight & BMI</span>
+              <span className="text-lime-400">›</span>
+            </Link>
 
             {/* Weight Unit Selection */}
             <div className="space-y-2">
@@ -94,12 +64,8 @@ export function AppHeader() {
                     key={u}
                     type="button"
                     onClick={() => {
-                      setUnit(u as Unit);
-                      if (profile && store) {
-                        const updated = { ...profile, unit: u as Unit };
-                        setProfile(updated);
-                        void store.saveProfile(updated);
-                      }
+                      setUnit(u);
+                      if (store) void patchProfile(store, { unit: u });
                     }}
                     className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
                       unit === u

@@ -14,7 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { store } = useStore();
+  const { store, setUnit } = useStore();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -44,6 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const p = await store.getProfile();
         if (!cancelled) {
           setProfile(p);
+          // Use the kg/lb preference saved on the profile
+          if (p?.unit) setUnit(p.unit);
           setProfileReady(true);
           finished = true;
         }

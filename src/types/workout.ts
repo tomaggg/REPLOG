@@ -8,15 +8,24 @@ export interface AuthUser {
   email: string;
 }
 
+export type Sex = "male" | "female";
+
+/** Everything here is optional except the preferred unit — users fill it in when they want. */
 export interface UserProfile {
   unit: Unit;
   initialWeightUnit?: Unit;
-  bodyWeight: number;
-  height: number;
-  onboarded: boolean;
+  /** Latest body weight, in `unit` (kept in sync with weight logs). */
+  bodyWeight?: number;
+  heightCm?: number;
+  sex?: Sex;
+  birthYear?: number;
   updatedAt: number;
   /** Rest timer length between sets, in seconds. */
   restSeconds?: number;
+  /** Old profiles only: height saved without a unit (cm or inches). Use heightCmOf(). */
+  height?: number;
+  /** Old profiles only: from the removed first-time form. */
+  onboarded?: boolean;
 }
 
 export interface WeightEntry {

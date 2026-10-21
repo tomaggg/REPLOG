@@ -1,10 +1,10 @@
 import type { ChartData } from "~/lib/weight";
-import type { Unit } from "~/types/workout";
 
 export interface HoveredPoint {
   date: string;
   weight: number;
-  unit: Unit;
+  /** Shown after values, e.g. "kg" or "BMI" */
+  unit: string;
   x: number;
   y: number;
 }
@@ -22,7 +22,8 @@ export function WeightChartSvg({
   onHover,
 }: {
   chart: ChartData;
-  unit: Unit;
+  /** Shown after values, e.g. "kg" or "BMI" */
+  unit: string;
   hoveredPoint: HoveredPoint | null;
   onHover: (point: HoveredPoint | null) => void;
 }) {

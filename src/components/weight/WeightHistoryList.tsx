@@ -1,4 +1,5 @@
 import { Spinner } from "~/components/ui/Spinner";
+import { bmi } from "~/lib/bmi";
 import { longDate, shortTime, type DisplayWeightEntry } from "~/lib/weight";
 import type { Unit } from "~/types/workout";
 
@@ -6,10 +7,13 @@ export function WeightHistoryList({
   logs,
   unit,
   loading,
+  heightCm,
 }: {
   logs: DisplayWeightEntry[];
   unit: Unit;
   loading: boolean;
+  /** Shows each entry's BMI when known */
+  heightCm: number | null;
 }) {
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5 backdrop-blur-sm">
@@ -32,7 +36,7 @@ export function WeightHistoryList({
       ) : (
         <div className="divide-y divide-neutral-800/80">
           {logs.map((log) => (
-            <HistoryRow key={log.id} log={log} unit={unit} />
+            <HistoryRow key={log.id} log={log} unit={unit} heightCm={heightCm} />
           ))}
         </div>
       )}
@@ -40,7 +44,15 @@ export function WeightHistoryList({
   );
 }
 
-function HistoryRow({ log, unit }: { log: DisplayWeightEntry; unit: Unit }) {
+function HistoryRow({
+  log,
+  unit,
+  heightCm,
+}: {
+  log: DisplayWeightEntry;
+  unit: Unit;
+  heightCm: number | null;
+}) {
   return (
     <div className="flex items-center justify-between py-3 transition-colors hover:bg-neutral-800/20">
       <div>
@@ -60,6 +72,11 @@ function HistoryRow({ log, unit }: { log: DisplayWeightEntry; unit: Unit }) {
           {log.displayWeight.toFixed(1)}
         </span>{" "}
         <span className="text-xs font-semibold text-neutral-400">{unit}</span>
+        {heightCm !== null ? (
+          <p className="text-[11px] tabular-nums text-neutral-500">
+            BMI {bmi(log.weight, log.originalUnit, heightCm).toFixed(1)}
+          </p>
+        ) : null}
       </div>
     </div>
   );

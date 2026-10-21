@@ -33,7 +33,7 @@ export function BottomNav() {
     },
     {
       to: "/weight",
-      label: "Weight",
+      label: "BMI",
       icon: ScaleIcon,
     },
   ];
