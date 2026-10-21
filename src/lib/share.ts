@@ -2,7 +2,8 @@
 // (/routines/import?r=…), so nothing extra is stored in the database and the
 // person receiving it decides whether to save it.
 
-import type { Exercise, Routine, RoutineExercise } from "~/types/workout";
+import type { Exercise, LoadType, Routine, RoutineExercise } from "~/types/workout";
+import { LOAD_TYPES } from "./load-types";
 
 /** What a share link contains. */
 export interface SharedRoutine {
@@ -87,6 +88,10 @@ function cleanExercise(raw: any): Exercise | null {
     // Only real web links, so a shared link can't smuggle in a javascript: URL
     videoUrl: /^https?:\/\//i.test(videoUrl) ? videoUrl : undefined,
     notes: text(raw?.notes, MAX_NOTES) || undefined,
+    loadType:
+      typeof raw?.loadType === "string" && Object.hasOwn(LOAD_TYPES, raw.loadType)
+        ? (raw.loadType as LoadType)
+        : undefined,
     isCustom: true,
   };
 }

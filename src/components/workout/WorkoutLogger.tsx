@@ -17,6 +17,7 @@ import type {
 } from "~/types/workout";
 import { newId } from "~/lib/id";
 import { unlockSound } from "~/lib/alert";
+import { formatSet, loadTypeOf, setLoadType } from "~/lib/load-types";
 import { findPRs, prLabel } from "~/lib/records";
 import { addRoutineToWorkout, groupSets, previousSet, renumberSets } from "~/lib/workout";
 import { ExerciseCard } from "./ExerciseCard";
@@ -31,7 +32,16 @@ function withAddedSet(sets: SetEntry[], exercise: Exercise, weight: number, reps
   const setIndex = sets.filter((s) => s.exerciseId === exercise.id).length + 1;
   return [
     ...sets,
-    { id: newId(), exerciseId: exercise.id, exerciseName: exercise.name, setIndex, weight, reps, unit },
+    {
+      id: newId(),
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      setIndex,
+      weight,
+      reps,
+      unit,
+      loadType: loadTypeOf(exercise),
+    },
   ];
 }
 
@@ -120,10 +130,10 @@ export function WorkoutLogger({
     onChange({ ...draft, sets, restEndsAt: Date.now() + restSeconds * 1000 });
 
     const sameExercise = sets.filter((s) => s.exerciseId === target.exerciseId);
-    const pr = findPRs(sameExercise, history[target.exerciseId]).get(setId);
+    const pr = findPRs(sameExercise, history[target.exerciseId], setLoadType(ticked)).get(setId);
     if (pr) {
       setPrMessage(
-        `${prLabel(pr)}! ${target.exerciseName} ${ticked.weight} ${ticked.unit} × ${ticked.reps}`,
+        `${prLabel(pr)}! ${target.exerciseName} ${formatSet(ticked)}`,
       );
     }
   }
@@ -144,7 +154,11 @@ export function WorkoutLogger({
   }
 
   function startRoutine(routine: Routine) {
-    onChange(addRoutineToWorkout({ ...draft, sets: safeSets }, routine, unit));
+    onChange(
+      addRoutineToWorkout({ ...draft, sets: safeSets }, routine, unit, (id) =>
+        loadTypeOf(exerciseMap.get(id)),
+      ),
+    );
   }
 
   return (
@@ -194,7 +208,13 @@ export function WorkoutLogger({
           history={history[group.exerciseId]}
           onInspect={() => setInspecting(group.exerciseId)}
           onRemoveExercise={() => removeExercise(group.exerciseId)}
-          onAddSet={(w, r) => addSet({ id: group.exerciseId, name: group.exerciseName, group: "" }, w, r)}
+          onAddSet={(w, r) =>
+            addSet(
+              exerciseMap.get(group.exerciseId) ?? { id: group.exerciseId, name: group.exerciseName, group: "" },
+              w,
+              r,
+            )
+          }
           onEditSet={updateSet}
           onToggleSetDone={toggleDone}
           onRemoveSet={(setId) => setSets(withoutSet(safeSets, setId))}

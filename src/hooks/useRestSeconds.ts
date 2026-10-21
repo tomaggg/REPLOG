@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "~/context/AuthContext";
 import { useStore } from "~/context/StoreContext";
 
-const DEFAULT_REST_SECONDS = 90;
+const DEFAULT_REST_SECONDS = 120;
 const MIN_REST_SECONDS = 15;
 const MAX_REST_SECONDS = 600;
 /** Wait for the taps to stop before saving, so −15s −15s −15s is one write. */

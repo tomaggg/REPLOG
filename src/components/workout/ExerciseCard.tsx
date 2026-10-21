@@ -2,6 +2,7 @@ import { MuscleTags } from "~/components/muscles/MuscleTags";
 import { Card } from "~/components/ui/Card";
 import { HistoryIcon } from "~/components/ui/icons";
 import type { Exercise, ExerciseHistory, SetEntry } from "~/types/workout";
+import { formatSet, setLoadType } from "~/lib/load-types";
 import { findPRs } from "~/lib/records";
 import { bestSet, previousSet, type SetGroup } from "~/lib/workout";
 import { SetRow } from "./SetRow";
@@ -36,8 +37,10 @@ export function ExerciseCard({
   onRemoveSet: (setId: string) => void;
 }) {
   const seed = nextSetSeed(group, history);
-  const best = bestSet(group.sets);
-  const prs = findPRs(group.sets, history);
+  // The sets carry their tracking type (bodyweight, assisted, …)
+  const type = setLoadType(group.sets[0]);
+  const best = bestSet(group.sets, type);
+  const prs = findPRs(group.sets, history, type);
 
   const lastSets = (history?.last ?? []).filter((s) => s.weight > 0 || s.reps > 0);
   const lastSetCount = lastSets.length;
@@ -77,9 +80,9 @@ export function ExerciseCard({
             ) : null}
           </div>
           <MuscleTags exerciseId={group.exerciseId} group={exercise?.group} compact />
-          {best && best.weight > 0 && best.reps > 0 ? (
+          {best ? (
             <p className="text-xs text-lime-400">
-              best: {best.weight} {best.unit} × {best.reps}
+              best: {formatSet(best)}
             </p>
           ) : null}
         </div>
@@ -105,10 +108,7 @@ export function ExerciseCard({
             <div className="flex flex-wrap gap-x-0.5 gap-y-0.5 text-[11px]">
               {lastSets.map((s, i) => (
                 <span key={s.id} className="inline-flex items-center gap-1">
-                  <span className="text-neutral-300 font-semibold">{s.weight}</span>
-                  <span className="text-neutral-500">{s.unit}</span>
-                  <span className="text-neutral-600">×</span>
-                  <span className="text-neutral-300 font-semibold">{s.reps}</span>
+                  <span className="text-neutral-300 font-semibold">{formatSet(s)}</span>
                   {i < lastSets.length - 1 && <span className="text-neutral-700 mx-0.5">·</span>}
                 </span>
               ))}

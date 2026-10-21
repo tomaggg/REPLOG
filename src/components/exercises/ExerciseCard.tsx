@@ -1,6 +1,7 @@
 import { MuscleTags } from "~/components/muscles/MuscleTags";
 import { NotesIcon, PlayIcon, TrashIcon } from "~/components/ui/icons";
 import { getGroupMeta } from "~/lib/exercises";
+import { LOAD_TYPES, loadTypeOf } from "~/lib/load-types";
 import type { Exercise } from "~/types/workout";
 
 export function ExerciseCard({
@@ -34,6 +35,11 @@ export function ExerciseCard({
           <span className="text-sm font-bold text-neutral-100 leading-tight">
             {exercise.name}
           </span>
+          {loadTypeOf(exercise) !== "weighted" && (
+            <span className="rounded-md bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-300">
+              {LOAD_TYPES[loadTypeOf(exercise)].label}
+            </span>
+          )}
           {exercise.isCustom && (
             <span className="rounded-md bg-lime-400/10 px-1.5 py-0.5 text-[10px] font-bold text-lime-400">
               Custom

@@ -9,8 +9,10 @@ import { Banner } from "~/components/ui/Banner";
 import { Spinner } from "~/components/ui/Spinner";
 import { useStore } from "~/context/StoreContext";
 import { useCustomExercises } from "~/hooks/useCustomExercises";
+import { useExerciseLookup } from "~/hooks/useExerciseLookup";
 import { useRoutines } from "~/hooks/useRoutines";
 import { errorMessage } from "~/lib/errors";
+import { loadTypeOf } from "~/lib/load-types";
 import { routineShareUrl } from "~/lib/share";
 import { addRoutineToWorkout, emptyWorkout } from "~/lib/workout";
 import type { Routine } from "~/types/workout";
@@ -35,6 +37,7 @@ function RoutinesDashboard() {
 
   const { routines, loading, error, setError, refresh } = useRoutines();
   const { customExercises } = useCustomExercises();
+  const exercises = useExerciseLookup();
 
   // The editor modal: closed, or open for a new routine (null) or an existing one
   const [editorOpen, setEditorOpen] = useState(false);
@@ -84,7 +87,9 @@ function RoutinesDashboard() {
     try {
       // Add to the workout in progress, or start a new one
       const active = (await store.getActiveWorkout()) ?? emptyWorkout();
-      await store.saveWorkout(addRoutineToWorkout(active, routine, unit));
+      await store.saveWorkout(
+        addRoutineToWorkout(active, routine, unit, (id) => loadTypeOf(exercises.get(id))),
+      );
       void navigate({ to: "/" });
     } catch (err) {
       setError(errorMessage(err, "Could not start workout."));

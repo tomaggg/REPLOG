@@ -1,11 +1,13 @@
 import type {
   ExerciseHistory,
+  LoadType,
   Routine,
   SetEntry,
   Unit,
   Workout,
 } from "~/types/workout";
 import { newId } from "./id";
+import { isBetterSet, setCounts, setLoadType } from "./load-types";
 import { recordsOf } from "./records";
 import { convertWeight } from "./weight";
 
@@ -13,10 +15,11 @@ export function emptyWorkout(): Workout {
   return { id: newId(), startedAt: Date.now(), finishedAt: null, note: "", sets: [] };
 }
 
-/** Total weight moved in a workout, split by unit. */
+/** Total weight moved in a workout, split by unit. Only weighted sets move weight. */
 export function volumeByUnit(workout: Workout): Record<string, number> {
   const out: Record<string, number> = {};
   for (const s of workout.sets ?? []) {
+    if (setLoadType(s) !== "weighted") continue;
     const v = (Number(s.weight) || 0) * (Number(s.reps) || 0);
     out[s.unit] = (out[s.unit] ?? 0) + v;
   }
@@ -82,13 +85,12 @@ export function previousSet(
   return set && { weight: convertWeight(set.weight, set.unit, unit), reps: set.reps };
 }
 
-/** Heaviest set; ties go to the one with more reps. */
-export function bestSet(sets: SetEntry[]): SetEntry | null {
+/** The best set for this tracking type (e.g. heaviest, most reps, least assistance), or null. */
+export function bestSet(sets: SetEntry[], type: LoadType): SetEntry | null {
   let best: SetEntry | null = null;
   for (const s of sets ?? []) {
-    if (!best || s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) {
-      best = s;
-    }
+    if (!setCounts(s, type)) continue;
+    if (!best || isBetterSet(s, best, type)) best = s;
   }
   return best;
 }
@@ -115,14 +117,22 @@ export function buildExerciseHistory(workouts: Workout[]): Record<string, Exerci
   }
 
   for (const [exerciseId, sets] of allSets) {
-    out[exerciseId].best = bestSet(sets);
+    // sets[0] is from the newest workout, so it has the current tracking type
+    out[exerciseId].best = bestSet(sets, setLoadType(sets[0]));
     out[exerciseId].records = recordsOf(sets);
   }
   return out;
 }
 
-/** Placeholder (0 × 0) sets for each exercise in a routine, to be filled in while logging. */
-export function routineSeedSets(routine: Routine, unit: Unit): SetEntry[] {
+/**
+ * Placeholder (0 × 0) sets for each exercise in a routine, to be filled in while logging.
+ * `typeOf` gives each exercise's tracking type.
+ */
+export function routineSeedSets(
+  routine: Routine,
+  unit: Unit,
+  typeOf: (exerciseId: string) => LoadType,
+): SetEntry[] {
   const out: SetEntry[] = [];
   for (const ex of routine.exercises) {
     for (let s = 1; s <= ex.targetSets; s++) {
@@ -134,6 +144,7 @@ export function routineSeedSets(routine: Routine, unit: Unit): SetEntry[] {
         weight: 0,
         reps: 0,
         unit,
+        loadType: typeOf(ex.exerciseId),
       });
     }
   }
@@ -145,9 +156,14 @@ export function routineSeedSets(routine: Routine, unit: Unit): SetEntry[] {
  * skipped so their logged sets aren't duplicated. An empty note becomes
  * "Routine: <name>".
  */
-export function addRoutineToWorkout(workout: Workout, routine: Routine, unit: Unit): Workout {
+export function addRoutineToWorkout(
+  workout: Workout,
+  routine: Routine,
+  unit: Unit,
+  typeOf: (exerciseId: string) => LoadType,
+): Workout {
   const present = new Set(workout.sets.map((s) => s.exerciseId));
-  const seeded = routineSeedSets(routine, unit).filter((s) => !present.has(s.exerciseId));
+  const seeded = routineSeedSets(routine, unit, typeOf).filter((s) => !present.has(s.exerciseId));
   return {
     ...workout,
     // An empty session starts its clock now

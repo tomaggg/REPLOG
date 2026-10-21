@@ -35,6 +35,8 @@ export interface Exercise {
   videoUrl?: string;
   notes?: string;
   isCustom?: boolean;
+  /** How sets are logged; "weighted" when missing. */
+  loadType?: LoadType;
 }
 
 /** One set: weight lifted, reps performed, for an exercise. */
@@ -45,17 +47,33 @@ export interface SetEntry {
   exerciseName: string;
   /** 1-based order of this set within its exercise. */
   setIndex: number;
+  /** Weight lifted — or the assistance, for assisted exercises. 0 when not used. */
   weight: number;
+  /** Reps — or seconds, for timed exercises. */
   reps: number;
   unit: Unit;
+  /** The exercise's tracking type when this set was logged; "weighted" when missing. */
+  loadType?: LoadType;
   /** Ticked off while logging. Only done sets are kept when a workout is finished. */
   done?: boolean;
   /** Set when this set was a personal record at the time it was logged. */
   pr?: PRKind;
 }
 
-/** "weight": heaviest ever. "e1rm": strongest set by estimated one-rep max. */
-export type PRKind = "weight" | "e1rm";
+/**
+ * How an exercise is tracked:
+ * - weighted: weight × reps (heavier is better)
+ * - bodyweight: reps only
+ * - assisted: machine/band assistance × reps (LESS assistance is better)
+ * - timed: seconds held, stored in `reps`
+ */
+export type LoadType = "weighted" | "bodyweight" | "assisted" | "timed";
+
+/**
+ * weight: heaviest ever · e1rm: best estimated one-rep max · reps: most reps
+ * (bodyweight, or same assistance) · assist: least assistance · time: longest hold
+ */
+export type PRKind = "weight" | "e1rm" | "reps" | "assist" | "time";
 
 /**
  * A training session. `finishedAt === null` means it is still in progress
@@ -98,7 +116,13 @@ export interface ExerciseHistory {
   /** Number of finished sessions that included this exercise. */
   sessions: number;
   /** Best numbers so far, in kg — what a new set must beat to be a PR. */
-  records: { weightKg: number; e1rmKg: number } | null;
+  records: {
+    weightKg: number;
+    e1rmKg: number;
+    reps: number;
+    assistKg: number;
+    repsAtAssist: number;
+  } | null;
 }
 
 export interface FirebaseConfig {

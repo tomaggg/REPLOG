@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { MuscleBreakdown } from "~/components/muscles/MuscleBreakdown";
 import { Banner } from "~/components/ui/Banner";
 import { useExerciseLookup } from "~/hooks/useExerciseLookup";
+import { formatSet, setLoadType } from "~/lib/load-types";
 import { muscleBreakdown } from "~/lib/muscles";
 import { GhostButton } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
@@ -65,7 +66,7 @@ export function WorkoutDetailCard({
       />
 
       {groups.map((group) => {
-        const best = bestSet(group.sets);
+        const best = bestSet(group.sets, setLoadType(group.sets[0]));
         return (
           <Card key={group.exerciseId} className="space-y-2">
             <div className="flex items-baseline justify-between gap-2">
@@ -74,7 +75,7 @@ export function WorkoutDetailCard({
               </h3>
               {best ? (
                 <span className="shrink-0 text-xs font-semibold text-lime-400">
-                  best {best.weight} {best.unit} × {best.reps}
+                  best {formatSet(best)}
                 </span>
               ) : null}
             </div>
@@ -88,7 +89,7 @@ export function WorkoutDetailCard({
                     ) : null}
                   </span>
                   <span className="font-semibold text-neutral-100">
-                    {set.weight} {set.unit} × {set.reps}
+                    {formatSet(set)}
                   </span>
                 </li>
               ))}

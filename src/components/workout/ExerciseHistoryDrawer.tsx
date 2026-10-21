@@ -1,5 +1,6 @@
 import type { Exercise, ExerciseHistory } from "~/types/workout";
 import { MuscleTags } from "~/components/muscles/MuscleTags";
+import { formatSet } from "~/lib/load-types";
 import { ExternalLinkIcon } from "~/components/ui/icons";
 import { Modal } from "~/components/ui/Modal";
 
@@ -72,7 +73,7 @@ export function ExerciseHistoryDrawer({
               <span>Logged in {history.sessions} session{history.sessions === 1 ? "" : "s"}</span>
               {best ? (
                 <span className="font-semibold text-lime-400">
-                  PR: {best.weight} {best.unit} × {best.reps}
+                  PR: {formatSet(best)}
                 </span>
               ) : null}
             </div>
@@ -86,7 +87,7 @@ export function ExerciseHistoryDrawer({
                   <li key={s.id || idx} className="flex items-center justify-between py-2 text-sm">
                     <span className="text-neutral-500">Set {idx + 1}</span>
                     <span className="font-semibold text-neutral-100">
-                      {s.weight} {s.unit} × {s.reps}
+                      {formatSet(s)}
                     </span>
                   </li>
                 ))}

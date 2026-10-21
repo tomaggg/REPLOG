@@ -6,8 +6,9 @@ import { Modal } from "~/components/ui/Modal";
 import { useStore } from "~/context/StoreContext";
 import { errorMessage } from "~/lib/errors";
 import { newId } from "~/lib/id";
+import { LOAD_TYPES, loadTypeOf } from "~/lib/load-types";
 import { GROUPS } from "~/services/exercises";
-import type { Exercise } from "~/types/workout";
+import type { Exercise, LoadType } from "~/types/workout";
 
 export function ExerciseFormModal({
   exercise,
@@ -25,6 +26,7 @@ export function ExerciseFormModal({
   const [group, setGroup] = useState(exercise?.group || "Chest");
   const [videoUrl, setVideoUrl] = useState(exercise?.videoUrl || "");
   const [notes, setNotes] = useState(exercise?.notes || "");
+  const [loadType, setLoadType] = useState<LoadType>(loadTypeOf(exercise ?? undefined));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export function ExerciseFormModal({
         group: group.trim() || "Other",
         videoUrl: videoUrl.trim() || undefined,
         notes: notes.trim() || undefined,
+        loadType,
         isCustom: exercise ? Boolean(exercise.isCustom) : true,
       });
       onSaved();
@@ -85,6 +88,29 @@ export function ExerciseFormModal({
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-neutral-400 mb-1">Tracking</label>
+          <div role="radiogroup" className="grid grid-cols-2 gap-1.5">
+            {(Object.keys(LOAD_TYPES) as LoadType[]).map((type) => (
+              <button
+                key={type}
+                type="button"
+                role="radio"
+                aria-checked={loadType === type}
+                onClick={() => setLoadType(type)}
+                className={`min-h-10 rounded-xl border text-xs font-bold transition-colors ${
+                  loadType === type
+                    ? "border-lime-400 bg-lime-400/10 text-lime-400"
+                    : "border-neutral-800 bg-neutral-950 text-neutral-400 hover:text-neutral-200"
+                }`}
+              >
+                {LOAD_TYPES[type].label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] text-neutral-500">{LOAD_TYPES[loadType].hint}</p>
         </div>
 
         <Field

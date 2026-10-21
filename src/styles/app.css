@@ -10,6 +10,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* iOS home-screen app: on launch the page is sized without the translucent
+     status bar, so the bottom nav floats up until a later relayout. */
+  html {
+    min-height: calc(100% + env(safe-area-inset-top));
+  }
 }
 
 @utility pt-safe {

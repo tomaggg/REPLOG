@@ -1,6 +1,6 @@
-import type { Exercise } from "~/types/workout";
+import type { Exercise, LoadType } from "~/types/workout";
 
-export const BUILTIN_EXERCISES: Exercise[] = [
+const EXERCISE_LIST: Exercise[] = [
   { "id": "chest-press-machine", "name": "Chest Press Machine", "group": "Chest" },
   { "id": "dumbbell-chest-press", "name": "Dumbbell Chest Press", "group": "Chest" },
   { "id": "low-incline-db-flye", "name": "Low Incline DB Flye", "group": "Chest" },
@@ -177,7 +177,41 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   { "id": "swiss-ball-rollout", "name": "Swiss Ball Rollout", "group": "Core" }
 ];
 
-export const GROUPS = ["All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core"] as const;
+/** Built-ins that aren't weight × reps. Everything else is "weighted". Users can change any of them. */
+const DEFAULT_LOAD_TYPES: Record<string, LoadType> = {
+  "deficit-pushup": "bodyweight",
+  "close-grip-push-up": "bodyweight",
+  "pull-up": "bodyweight",
+  "medium-grip-pull-up": "bodyweight",
+  "neutral-grip-pullup": "bodyweight",
+  // Band help can't be measured in kg, so just count reps
+  "wide-grip-band-assisted-pull-up": "bodyweight",
+  "bodyweight-dip": "bodyweight",
+  "bench-dip": "bodyweight",
+  "close-grip-assisted-dip": "assisted",
+  "paused-assisted-dip": "assisted",
+  "hanging-leg-raise": "bodyweight",
+  "roman-chair-leg-raise": "bodyweight",
+  "reverse-crunch": "bodyweight",
+  "bicycle-crunch": "bodyweight",
+  "ab-wheel-rollout": "bodyweight",
+  "swiss-ball-rollout": "bodyweight",
+  "nordic-ham-curl": "bodyweight",
+  "reverse-nordic": "bodyweight",
+  "sissy-squat": "bodyweight",
+  "glute-ham-raise": "bodyweight",
+  "prisoner-45-hyperextension": "bodyweight",
+  "copenhagen-hip-adduction": "bodyweight",
+  "lateral-band-walk": "bodyweight",
+  "llpt-plank": "timed",
+  "stomach-vacuums": "timed",
+};
+
+export const BUILTIN_EXERCISES: Exercise[] = EXERCISE_LIST.map((ex) =>
+  DEFAULT_LOAD_TYPES[ex.id] ? { ...ex, loadType: DEFAULT_LOAD_TYPES[ex.id] } : ex,
+);
+
+export const GROUPS =["All", "Chest", "Back", "Legs", "Shoulders", "Arms", "Core"] as const;
 
 export function searchExercises(
   query: string,

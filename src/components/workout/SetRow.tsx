@@ -1,4 +1,5 @@
 import { CheckIcon, CloseIcon } from "~/components/ui/icons";
+import { setLoadType, usesWeight } from "~/lib/load-types";
 import { prLabel } from "~/lib/records";
 import type { PRKind, SetEntry } from "~/types/workout";
 import { NumberInput } from "./NumberInput";
@@ -24,6 +25,8 @@ export function SetRow({
   onToggleDone: () => void;
   onRemove: () => void;
 }) {
+  const type = setLoadType(set);
+
   return (
     <div
       className={`-mx-1.5 rounded-xl px-1.5 py-1 transition-colors ${
@@ -32,26 +35,39 @@ export function SetRow({
     >
       <div className="flex items-center gap-2">
         <span className="w-6 shrink-0 text-center text-sm font-semibold text-neutral-500">{index}</span>
-        <div className="min-w-0 flex-1">
-          <NumberInput
-            value={set.weight}
-            inputMode="decimal"
-            ariaLabel={`${exerciseName} set ${index} weight`}
-            placeholder={previous ? String(previous.weight) : "0"}
-            onCommit={(n) => onEdit({ weight: n })}
-          />
-        </div>
-        <span className="w-6 shrink-0 text-center text-xs text-neutral-500">{set.unit}</span>
-        <span className="shrink-0 text-neutral-600">×</span>
+        {usesWeight(type) ? (
+          <>
+            <div className="min-w-0 flex-1">
+              <NumberInput
+                value={set.weight}
+                inputMode="decimal"
+                ariaLabel={`${exerciseName} set ${index} ${type === "assisted" ? "assistance" : "weight"}`}
+                placeholder={previous ? String(previous.weight) : "0"}
+                onCommit={(n) => onEdit({ weight: n })}
+              />
+            </div>
+            {/* For assisted sets the number is the machine's help, not what you lifted */}
+            <span className="w-8 shrink-0 text-center text-xs leading-tight text-neutral-500">
+              {set.unit}
+              {type === "assisted" ? <span className="block text-[9px] text-sky-400">assist</span> : null}
+            </span>
+            <span className="shrink-0 text-neutral-600">×</span>
+          </>
+        ) : null}
         <div className="min-w-0 flex-1">
           <NumberInput
             value={set.reps}
             inputMode="numeric"
-            ariaLabel={`${exerciseName} set ${index} reps`}
+            ariaLabel={`${exerciseName} set ${index} ${type === "timed" ? "seconds" : "reps"}`}
             placeholder={previous ? String(previous.reps) : "0"}
             onCommit={(n) => onEdit({ reps: n })}
           />
         </div>
+        {!usesWeight(type) ? (
+          <span className="w-8 shrink-0 text-center text-xs text-neutral-500">
+            {type === "timed" ? "sec" : "reps"}
+          </span>
+        ) : null}
         <button
           type="button"
           aria-label={`Mark ${exerciseName} set ${index} as done`}
