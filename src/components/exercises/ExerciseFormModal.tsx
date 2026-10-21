@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ExerciseMuscles } from "~/components/muscles/ExerciseMuscles";
 import { Banner } from "~/components/ui/Banner";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Input";
@@ -89,6 +90,8 @@ export function ExerciseFormModal({
             ))}
           </select>
         </div>
+
+        <ExerciseMuscles exerciseId={exercise?.id ?? ""} group={group} />
 
         <div>
           <label className="block text-xs font-semibold text-neutral-400 mb-1">Tracking</label>

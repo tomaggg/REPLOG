@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card } from "~/components/ui/Card";
 import { regionBreakdown, type MuscleShare } from "~/lib/muscles";
+import { BodyMap } from "./BodyMap";
 import { REGION_COLORS } from "./regionColors";
 
 /** Muscles shown before "Show all". */
@@ -35,6 +36,8 @@ export function MuscleBreakdown({
         <h3 className="font-bold text-neutral-100">Muscles worked</h3>
         <span className="text-[10px] text-neutral-500">{caption}</span>
       </div>
+
+      <BodyMap shares={shares} />
 
       {/* Body regions as one stacked bar, with a legend */}
       <div className="flex h-2.5 overflow-hidden rounded-full bg-neutral-800">

@@ -1,5 +1,5 @@
 import type { Exercise, ExerciseHistory } from "~/types/workout";
-import { MuscleTags } from "~/components/muscles/MuscleTags";
+import { ExerciseMuscles } from "~/components/muscles/ExerciseMuscles";
 import { formatSet } from "~/lib/load-types";
 import { ExternalLinkIcon } from "~/components/ui/icons";
 import { Modal } from "~/components/ui/Modal";
@@ -21,14 +21,7 @@ export function ExerciseHistoryDrawer({
   return (
     <Modal title={exerciseName} onClose={onClose}>
       <div className="space-y-4">
-        {exercise ? (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              Muscles worked
-            </p>
-            <MuscleTags exerciseId={exercise.id} group={exercise.group} />
-          </div>
-        ) : null}
+        {exercise ? <ExerciseMuscles exerciseId={exercise.id} group={exercise.group} /> : null}
 
         {/* Exercise Reference: Video link & Notes */}
         {exercise && (exercise.videoUrl || exercise.notes) ? (
