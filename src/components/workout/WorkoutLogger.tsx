@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Banner } from "~/components/ui/Banner";
 import { Button, PrimaryButton } from "~/components/ui/Button";
 import { ElapsedTimer } from "~/components/ui/ElapsedTimer";
@@ -61,6 +61,7 @@ export function WorkoutLogger({
   onDiscard,
   restSeconds,
   onRestSecondsChange,
+  beforeStart,
 }: {
   draft: Workout;
   history: Record<string, ExerciseHistory>;
@@ -73,6 +74,8 @@ export function WorkoutLogger({
   /** Rest timer length, started each time a set is ticked off */
   restSeconds: number;
   onRestSecondsChange: (seconds: number) => void;
+  /** Shown until the first exercise is added, e.g. the weekly streak */
+  beforeStart?: ReactNode;
 }) {
   const exerciseMap = useExerciseLookup();
   const [picking, setPicking] = useState(false);
@@ -193,6 +196,8 @@ export function WorkoutLogger({
 
       {error ? <Banner tone="error">{error}</Banner> : null}
 
+      {safeSets.length === 0 ? beforeStart : null}
+
       <input
         value={draft.note || ""}
         onChange={(e) => onChange({ ...draft, note: e.target.value })}
@@ -221,8 +226,6 @@ export function WorkoutLogger({
         />
       ))}
 
-      <MuscleBreakdown shares={muscleShares} caption={muscleCaption} />
-
       <div className="grid grid-cols-2 gap-2">
         <Button variant="secondary" onClick={() => setPicking(true)} className="w-full">
           + Add Exercise
@@ -237,6 +240,8 @@ export function WorkoutLogger({
           {busy ? "Saving session…" : "Finish Workout"}
         </PrimaryButton>
       ) : null}
+
+      <MuscleBreakdown shares={muscleShares} caption={muscleCaption} />
 
       {prMessage ? <PRToast message={prMessage} onDone={hidePrMessage} /> : null}
 

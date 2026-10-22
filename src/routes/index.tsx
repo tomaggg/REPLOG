@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { AuthGuard } from "~/components/auth/AuthGuard";
 import { AppShell } from "~/components/layout/AppShell";
 import { Spinner } from "~/components/ui/Spinner";
+import { WeekStreakCard } from "~/components/workout/WeekStreakCard";
 import { WorkoutLogger } from "~/components/workout/WorkoutLogger";
 import { useStore } from "~/context/StoreContext";
 import { useActiveWorkout, type FinishDetails } from "~/hooks/useActiveWorkout";
@@ -60,6 +61,7 @@ function WorkoutDashboard() {
       onDiscard={handleDiscard}
       restSeconds={restSeconds}
       onRestSecondsChange={setRestSeconds}
+      beforeStart={past.loading ? null : <WeekStreakCard workouts={past.workouts} />}
     />
   );
 }
