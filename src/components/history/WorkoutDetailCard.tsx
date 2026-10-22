@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useCanGoBack, useRouter } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { MuscleBreakdown } from "~/components/muscles/MuscleBreakdown";
 import { Banner } from "~/components/ui/Banner";
@@ -26,6 +26,8 @@ export function WorkoutDetailCard({
   const safeSets = useMemo(() => (Array.isArray(workout.sets) ? workout.sets : []), [workout.sets]);
   const groups = useMemo(() => groupSets(safeSets), [safeSets]);
   const exercises = useExerciseLookup();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const muscleShares = useMemo(
     () => muscleBreakdown(safeSets, (id) => exercises.get(id)?.group),
     [safeSets, exercises],
@@ -36,6 +38,12 @@ export function WorkoutDetailCard({
       <div className="flex items-center gap-2 px-1">
         <Link
           to="/history"
+          // Going back keeps the list's search and filters
+          onClick={(e) => {
+            if (!canGoBack) return;
+            e.preventDefault();
+            router.history.back();
+          }}
           className="inline-flex min-h-10 items-center rounded-xl border border-neutral-800 px-3 text-sm font-medium text-neutral-300 hover:border-neutral-700 hover:text-neutral-100"
         >
           ‹ Back to History

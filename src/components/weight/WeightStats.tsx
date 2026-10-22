@@ -1,8 +1,7 @@
 import { useState } from "react";
+import { DAY_MS, toDateInput } from "~/lib/dates";
 import { shortDate, weightChangeSince, type WeightStats as Stats } from "~/lib/weight";
 import type { Unit } from "~/types/workout";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 type Period = "1w" | "1m" | "3m" | "all" | "custom";
 
@@ -13,12 +12,6 @@ const PERIODS: { id: Period; label: string; days?: number }[] = [
   { id: "all", label: "All" },
   { id: "custom", label: "Custom" },
 ];
-
-/** "2026-10-22" for a date input */
-function toDateInput(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 /** Midday of the picked day, so an entry logged any time that day is the closest. */
 function middayOf(dateInput: string): number {

@@ -13,19 +13,8 @@ const MAX_EXERCISES = 4;
 /** Body regions shown as dots */
 const MAX_REGIONS = 3;
 
-/** Monday 00:00 of the week `ms` falls in */
-function startOfWeek(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d.getTime();
-}
-
-/** "This week", "Last week", or the month, e.g. "September 2026" */
-function periodLabel(ms: number, now = Date.now()): string {
-  const thisWeek = startOfWeek(now);
-  if (ms >= thisWeek) return "This week";
-  if (ms >= thisWeek - 7 * 24 * 60 * 60 * 1000) return "Last week";
+/** "September 2026" */
+function monthLabel(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
@@ -43,22 +32,25 @@ export function WorkoutHistoryList({ workouts }: { workouts: Workout[] }) {
     );
   }
 
-  // Workouts arrive newest first, so each period's workouts are already together
+  // Workouts arrive newest first, so each month's workouts are already together
   const sections: { label: string; workouts: Workout[] }[] = [];
   for (const workout of workouts) {
-    const label = periodLabel(workout.startedAt);
+    const label = monthLabel(workout.startedAt);
     const last = sections[sections.length - 1];
     if (last?.label === label) last.workouts.push(workout);
     else sections.push({ label, workouts: [workout] });
   }
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6">
       {sections.map((section) => (
         <section key={section.label} className="space-y-3">
-          <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            {section.label}
-          </h3>
+          {/* Month headings only help when the list spans more than one month */}
+          {sections.length > 1 ? (
+            <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+              {section.label}
+            </h3>
+          ) : null}
           {section.workouts.map((workout) => (
             <WorkoutCard key={workout.id} workout={workout} exercises={exercises} />
           ))}
