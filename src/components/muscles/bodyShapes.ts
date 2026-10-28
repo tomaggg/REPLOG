@@ -1,21 +1,50 @@
 import type { Muscle } from "~/lib/muscles";
 
-// Body outline and muscle shapes for BodyMap, in a 200 × 350 box.
+// Body outline and muscle shapes for BodyMap, in a 200 × VIEW_HEIGHT box.
 // Shapes are drawn for the figure's left half; BodyMap mirrors them for the right.
 
-export const HEAD = { cx: 100, cy: 30, rx: 18.4, ry: 21 };
-export const NECK = { x: 90.3, y: 46, width: 19.4, height: 19, rx: 5 };
+/** Below the hips, everything is stretched by LEG_STRETCH so the legs aren't stubby. */
+const HIP_Y = 205;
+const LEG_STRETCH = 1.5;
+export const VIEW_HEIGHT = 425;
+
+/** The upper body is UPPER_WIDEN times wider down to CHEST_Y, easing back to normal at CROTCH_Y. */
+const UPPER_WIDEN = 1.15;
+const CHEST_Y = 150;
+const CROTCH_Y = 226;
+
+function widenAt(y: number): number {
+  if (y <= CHEST_Y) return UPPER_WIDEN;
+  if (y >= CROTCH_Y) return 1;
+  return UPPER_WIDEN - (UPPER_WIDEN - 1) * ((y - CHEST_Y) / (CROTCH_Y - CHEST_Y));
+}
+
+const round = (n: number) => Math.round(n * 10) / 10;
+
+/** Reshape every "x,y" point in a path: wider upper body, longer legs. */
+function reshape(d: string): string {
+  return d.replace(/(-?[\d.]+),(-?[\d.]+)/g, (_, xs: string, ys: string) => {
+    const x = Number(xs);
+    const y = Number(ys);
+    const outX = 100 - (100 - x) * widenAt(y);
+    const outY = y <= HIP_Y ? y : HIP_Y + (y - HIP_Y) * LEG_STRETCH;
+    return `${round(outX)},${round(outY)}`;
+  });
+}
+
+export const HEAD = { cx: 100, cy: 28, rx: 21, ry: 24 };
+export const NECK = { x: 88.5, y: 44, width: 23, height: 21, rx: 6 };
 
 /** Torso, arm and leg outlines (left half). */
 export const OUTLINE_HALF = [
   "M100,62 C87,62.8 71.9,64.5 61.1,69.4 C53.6,75.1 55.7,99.7 62.2,124.3 C65.4,148.9 67.6,173.5 65.4,198.1 C63.3,209.6 63.3,216.2 67.6,222.7 L100,226 Z",
   "M59,68.6 C42.8,71.8 37.4,85 39.5,99.7 C39.5,116.1 41.7,130.9 41.7,140.7 C35.2,160.4 35.2,181.7 37.4,199.8 L35.2,214.5 C37.4,221.9 46,221.9 48.2,215.3 L52.5,199.8 C56.8,178.4 59,158.8 56.8,140.7 C61.1,126 62.2,109.6 60,96.4 Z",
   "M65.4,204.7 C57.9,230.4 57.9,254.1 67.6,279.3 C62.2,298.5 64.4,317.8 71.9,334 L68.7,342.2 C77.3,346.6 89.2,345.1 91.4,340.7 L89.2,332.6 C94.6,316.3 97.8,297 95.7,280.8 C100,261.5 100,239.3 98.9,226 Z",
-];
+].map(reshape);
 
 export type BodyView = "front" | "back";
 
-export const MUSCLE_SHAPES: Record<BodyView, Partial<Record<Muscle, string>>> = {
+const DRAWN_SHAPES: Record<BodyView, Partial<Record<Muscle, string>>> = {
   front: {
     traps: "M92.4,58 L71.9,68.6 L93.5,67.7 Z",
     sideDelts: "M56.8,69.4 C44.9,72.7 39.5,83.3 41.7,94.8 C46,90.7 50.3,83.3 55.7,75.9 Z",
@@ -56,3 +85,12 @@ export const MUSCLE_SHAPES: Record<BodyView, Partial<Record<Muscle, string>>> = 
     calves: "M70.8,285.9 C64.4,300 68.7,316.3 77.3,326.6 L90.3,326.6 C94.6,313.3 94.6,298.5 90.3,285.9 Z",
   },
 };
+
+export const MUSCLE_SHAPES = {
+  front: reshapeAll(DRAWN_SHAPES.front),
+  back: reshapeAll(DRAWN_SHAPES.back),
+};
+
+function reshapeAll(shapes: Partial<Record<Muscle, string>>): Partial<Record<Muscle, string>> {
+  return Object.fromEntries(Object.entries(shapes).map(([m, d]) => [m, reshape(d)]));
+}

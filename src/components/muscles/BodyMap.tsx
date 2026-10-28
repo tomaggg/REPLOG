@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MUSCLES, type Muscle, type MuscleShare } from "~/lib/muscles";
-import { HEAD, MUSCLE_SHAPES, NECK, OUTLINE_HALF, type BodyView } from "./bodyShapes";
+import { HEAD, MUSCLE_SHAPES, NECK, OUTLINE_HALF, VIEW_HEIGHT, type BodyView } from "./bodyShapes";
 
 const MIRROR = "translate(200,0) scale(-1,1)";
 const BODY_FILL = "#262626"; // neutral-800
@@ -73,7 +73,7 @@ function Figure({
 
   return (
     <figure className="m-0 flex flex-col items-center gap-1">
-      <svg viewBox="0 0 200 350" className="h-auto w-full max-w-[180px]" role="img" aria-label={`${view} of body`}>
+      <svg viewBox={`0 0 200 ${VIEW_HEIGHT}`} className="h-auto w-full max-w-[160px]" role="img" aria-label={`${view} of body`}>
         <g fill={BODY_FILL} stroke={BODY_EDGE} strokeWidth={1}>
           <ellipse {...HEAD} />
           <rect {...NECK} />
