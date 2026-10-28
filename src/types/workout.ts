@@ -14,7 +14,7 @@ export type Sex = "male" | "female";
 export interface UserProfile {
   unit: Unit;
   initialWeightUnit?: Unit;
-  /** Latest body weight, in `unit` (kept in sync with weight logs). */
+  /** Latest body weight, in the unit it was logged in (kept in sync with weight logs). */
   bodyWeight?: number;
   heightCm?: number;
   sex?: Sex;

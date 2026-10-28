@@ -49,11 +49,11 @@ export function useWeightLogs() {
       setError(null);
       setSuccessMsg(null);
       await store.logBodyWeight(val, unit);
-      // Keep the profile's body weight in sync with the latest log
+      // Keep the profile's body weight in sync with the latest log.
+      // Not `unit`: that's the app-wide kg/lb choice from the account menu.
       setProfile(
         await patchProfile(store, {
           bodyWeight: val,
-          unit,
           initialWeightUnit: profile?.initialWeightUnit ?? unit,
         }),
       );
@@ -99,7 +99,6 @@ export function useWeightLogs() {
           ...patch,
           height: undefined,
           bodyWeight: weight,
-          unit,
           initialWeightUnit: profile?.initialWeightUnit ?? unit,
         }),
       );
